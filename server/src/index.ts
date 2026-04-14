@@ -10,6 +10,7 @@ import productosRoutes from './routes/productos';
 import pedidosRoutes from './routes/pedidos';
 import adminRoutes from './routes/admin';
 import reportesRoutes from './routes/reportes';
+import administrativoRoutes from './routes/administrativo';
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ const httpServer = createServer(app);
 // Configuración de Socket.io
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: ["http://localhost:5173", "http://localhost:5174"],
     methods: ['GET', 'POST']
   }
 });
@@ -43,6 +44,7 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/pedidos',  pedidosRoutes);
 app.use('/api/admin',    adminRoutes);
 app.use('/api/reportes', reportesRoutes);
+app.use('/api/administrativo', administrativoRoutes);
 
 app.get('/', (req, res) => {
   res.send('API La Butaca Restaurante funcionando correctamente.');

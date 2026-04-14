@@ -61,10 +61,19 @@ export const CocinaUI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
-
+    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+      {/* Fondo Inmersivo Estático */}
+      <div 
+        className="absolute inset-0 opacity-[0.05] pointer-events-none grayscale invert"
+        style={{
+          backgroundImage: 'url("https://images.unsplash.com/photo-1556910110-ad52744adccb?auto=format&fit=crop&q=80&w=2000")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      />
+      
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm px-6 py-3 flex items-center justify-between">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-6 py-3 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-4">
           <ButacaLogo size={48} variant="icon" theme="light" />
           <div>

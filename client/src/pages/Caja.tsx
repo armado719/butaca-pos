@@ -48,14 +48,12 @@ export const CajaUI = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden">
-
+    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden relative">
       {/* ── IZQUIERDA: Lista pedidos ── */}
-      <div className="w-72 bg-white border-r border-gray-200 flex flex-col shadow-sm">
-
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
+          <div className="flex items-center gap-3">
             <ButacaLogo size={40} variant="icon" theme="light" />
             <div>
               <p className="font-black text-gray-800 text-sm leading-none">LA BUTACA</p>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Lock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -10,9 +10,23 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const [currentImg, setCurrentImg] = useState(0);
 
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const imagenes = [
+    "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=2000",
+    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=2000",
+    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=2000"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImg(prev => (prev + 1) % imagenes.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,119 +47,134 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#0a0c10]">
+      
+      {/* Lado Derecho - Visual */}
+      <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-[#0a0c10] items-center justify-center">
+        {/* Slider de imágenes */}
+        {imagenes.map((img, idx) => (
+          <img 
+            key={idx}
+            src={img} 
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${idx === currentImg ? 'opacity-40' : 'opacity-0'}`} 
+            alt={`Restaurant Background ${idx}`}
+          />
+        ))}
+        
+        {/* Capa de gradiente para mejorar lectura */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10] via-transparent to-[#0a0c10]/50" />
 
-      {/* ── PANEL IZQUIERDO: patrón rombos rojo/amarillo (desktop) ── */}
-      <div className="hidden lg:flex flex-1 items-center justify-center relative overflow-hidden">
-        {/* Fondo con patrón de rombos inspirado en la imagen del restaurante */}
-        <div className="absolute inset-0" style={{ backgroundColor: '#B5201E' }}>
-          {Array.from({ length: 10 }).map((_, row) =>
-            Array.from({ length: 8 }).map((_, col) => (
-              <div
-                key={`${row}-${col}`}
-                className="absolute rotate-45"
-                style={{
-                  width: 110, height: 110,
-                  left: col * 110 - 55,
-                  top:  row * 110 - 55,
-                  backgroundColor: (row + col) % 2 === 0 ? '#B5201E' : '#F5A623',
-                  boxShadow: 'inset 0 0 0 2px rgba(0,0,0,0.12)',
-                }}
-              />
-            ))
-          )}
-          {/* Overlay oscuro para suavizar */}
-          <div className="absolute inset-0 bg-black/30" />
-        </div>
-
-        {/* Logo centrado sobre el patrón */}
-        <div className="relative z-10 flex flex-col items-center drop-shadow-2xl">
-          <ButacaLogo size={280} />
-          <p className="text-white/70 text-xs tracking-widest mt-4 uppercase">
-            Sistema de Punto de Venta
+        <div className="relative z-10 text-center px-12">
+          <div className="mb-8 transform hover:scale-105 transition-transform duration-700">
+            <ButacaLogo size={320} variant="full" theme="dark" />
+          </div>
+          <h2 className="text-4xl font-black text-white mb-4 tracking-tighter uppercase italic">
+            Sabor & Tecnología
+          </h2>
+          <p className="text-gray-400 text-lg max-w-md mx-auto font-light leading-relaxed">
+            Administra tu restaurante con la eficiencia que tu pasión merece.
           </p>
+        </div>
+        
+        {/* Indicadores del Slider */}
+        <div className="absolute bottom-10 left-10 flex gap-2">
+           {imagenes.map((_, idx) => (
+             <div 
+               key={idx} 
+               className={`h-1 rounded-full transition-all duration-500 ${idx === currentImg ? 'w-12 bg-primary' : 'w-4 bg-white/20'}`} 
+             />
+           ))}
         </div>
       </div>
 
-      {/* ── PANEL DERECHO: tarjeta blanca clara ── */}
-      <div className="flex-1 lg:max-w-md flex items-center justify-center px-6 py-12 bg-white shadow-2xl">
-        <div className="w-full max-w-sm">
-
-          {/* Logo arriba (reemplaza el tenedor + "Ingresar") */}
-          <div className="flex flex-col items-center mb-8">
-            <ButacaLogo size={150} />
-            <h2 className="text-2xl font-bold text-gray-800 mt-2">Ingresar</h2>
-            <p className="text-gray-400 text-sm mt-1">Accede con tus credenciales</p>
+      {/* ── MITAD DERECHA: Formulario de Login Limpio ── */}
+      <div className="flex-1 flex items-center justify-center p-8 lg:p-16 bg-white relative">
+        <div className="w-full max-w-md">
+          
+          {/* Encabezado con logo para móvil */}
+          <div className="mb-12 text-center lg:text-left">
+            <div className="lg:hidden flex justify-center mb-8">
+              <ButacaLogo size={140} theme="light" />
+            </div>
+            <h2 className="text-4xl font-black text-gray-900 tracking-tight">Ingresar</h2>
+            <p className="text-gray-500 text-lg mt-2 font-medium">Gestiona tu restaurante con eficiencia</p>
           </div>
 
-          {/* Error */}
+          {/* Mensaje de Error */}
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm text-center">
-              {error}
+            <div className="mb-8 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-xl shadow-sm animate-shake">
+              <p className="font-bold text-sm">Error de acceso</p>
+              <p className="text-xs opacity-90">{error}</p>
             </div>
           )}
 
           {/* Formulario */}
-          <form onSubmit={handleLogin} className="space-y-4">
-
-            {/* Email */}
-            <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 transition-all bg-white">
-              <div className="flex items-center justify-center px-4 bg-gray-50 border-r border-gray-200 text-gray-400 h-12">
-                <User size={18} />
+          <form onSubmit={handleLogin} className="space-y-6">
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-black text-gray-800 uppercase tracking-wider ml-1">
+                Usuario / Correo
+              </label>
+              <div className="flex items-center bg-gray-50 border-2 border-gray-200 rounded-2xl focus-within:border-[#B5201E] focus-within:bg-white transition-all shadow-sm">
+                <div className="pl-4 text-gray-700">
+                  <User size={22} />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full px-4 py-4 bg-transparent text-gray-900 font-bold focus:outline-none placeholder-gray-400"
+                  placeholder="admin@labutaca.com"
+                  required
+                />
               </div>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="flex-1 px-4 py-3 text-gray-700 text-sm focus:outline-none placeholder-gray-400"
-                placeholder="Correo electrónico"
-                required
-              />
             </div>
 
-            {/* Contraseña */}
-            <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:border-secondary focus-within:ring-2 focus-within:ring-secondary/20 transition-all bg-white">
-              <div className="flex items-center justify-center px-4 bg-gray-50 border-r border-gray-200 text-gray-400 h-12">
-                <Lock size={18} />
+            <div className="space-y-2">
+              <label className="block text-sm font-black text-gray-800 uppercase tracking-wider ml-1">
+                Contraseña
+              </label>
+              <div className="flex items-center bg-gray-50 border-2 border-gray-200 rounded-2xl focus-within:border-[#B5201E] focus-within:bg-white transition-all shadow-sm">
+                <div className="pl-4 text-gray-700">
+                  <Lock size={22} />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full px-4 py-4 bg-transparent text-gray-900 font-bold focus:outline-none placeholder-gray-400"
+                  placeholder="••••••••"
+                  required
+                />
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="flex-1 px-4 py-3 text-gray-700 text-sm focus:outline-none placeholder-gray-400"
-                placeholder="Contraseña"
-                required
-              />
             </div>
 
-            {/* Botón */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all mt-2 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg, #F5A623, #D4880A)', color: '#1a1a1a' }}
+              className="w-full relative group overflow-hidden py-5 rounded-2xl font-black text-base uppercase tracking-widest transition-all shadow-xl hover:shadow-[#F5A623]/20 mt-4 active:scale-95"
+              style={{ background: '#F5A623', color: '#1a1a1a' }}
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  Ingresando...
-                </>
-              ) : (
-                <>Entrar <ChevronRight size={16} /></>
-              )}
+              <span className="relative z-10 flex items-center justify-center gap-3">
+                {loading ? 'Entrando...' : 'Entrar al Sistema'}
+                {!loading && <ChevronRight size={20} />}
+              </span>
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             </button>
           </form>
 
-          {/* Footer */}
-          <p className="text-center text-gray-300 text-xs mt-8">
-            La Butaca Restaurante · Desde 2010
-          </p>
+          {/* Footer del login */}
+          <div className="mt-16 pt-8 border-t border-gray-100 flex flex-col items-center">
+            <p className="text-gray-400 text-[11px] font-bold uppercase tracking-[0.3em] mb-1">
+              La Butaca Restaurante
+            </p>
+            <p className="text-gray-300 text-[9px] font-medium italic">
+              "La comida de siempre, la tecnología de hoy"
+            </p>
+          </div>
         </div>
       </div>
-
     </div>
   );
 };
+

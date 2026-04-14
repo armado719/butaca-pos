@@ -5,20 +5,22 @@ import { useNavigate } from 'react-router-dom';
 import { ButacaLogo } from '../components/ButacaLogo';
 
 export const MeseroUI = () => {
-  const [mesas, setMesas]                     = useState<any[]>([]);
-  const [menu, setMenu]                       = useState<any[]>([]);
+  const [mesas, setMesas] = useState<any[]>([]);
+  const [menu, setMenu] = useState<any[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<any>(null);
-  const [carrito, setCarrito]                 = useState<any[]>([]);
+  const [carrito, setCarrito] = useState<any[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => { cargarDatos(); }, []);
+  useEffect(() => {
+    cargarDatos();
+  }, []);
 
   const cargarDatos = async () => {
     try {
-      const token   = localStorage.getItem('token');
+      const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       const [mesasRes, menuRes] = await Promise.all([
-        axios.get('http://localhost:3001/api/mesas',    { headers }),
+        axios.get('http://localhost:3001/api/mesas', { headers }),
         axios.get('http://localhost:3001/api/productos', { headers }),
       ]);
       setMesas(mesasRes.data);
@@ -40,7 +42,7 @@ export const MeseroUI = () => {
   const actualizarCantidad = (id: number, delta: number) => {
     setCarrito(prev =>
       prev.map(p => p.id === id ? { ...p, cantidad: p.cantidad + delta } : p)
-          .filter(p => p.cantidad > 0)
+        .filter(p => p.cantidad > 0)
     );
   };
 
@@ -65,10 +67,19 @@ export const MeseroUI = () => {
   const total = carrito.reduce((s, i) => s + i.precio * i.cantidad, 0);
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-gray-50 font-sans overflow-hidden relative">
+      {/* Fondo Decorativo Estático */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none grayscale"
+        style={{
+          backgroundImage: 'url("https://images.unsplash.com/photo-1544681280-d25a782adc9b?auto=format&fit=crop&q=80&w=2000")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      />
 
       {/* ── IZQUIERDA: Menú de productos ── */}
-      <div className="flex flex-col flex-1 overflow-hidden border-r border-gray-200 bg-white">
+      <div className="flex flex-col flex-1 overflow-hidden border-r border-gray-200 bg-white/90 backdrop-blur-sm relative z-10">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-white shadow-sm">
@@ -92,11 +103,11 @@ export const MeseroUI = () => {
           {menu.map((categoria: any) => (
             <div key={categoria.id} className="mb-8">
               <div className="flex items-center gap-3 mb-3">
-                <div className="h-0.5 w-4 bg-secondary rounded"/>
+                <div className="h-0.5 w-4 bg-secondary rounded" />
                 <h2 className="text-sm font-black text-gray-700 uppercase tracking-widest">
                   {categoria.nombre}
                 </h2>
-                <div className="h-0.5 flex-1 bg-gray-100 rounded"/>
+                <div className="h-0.5 flex-1 bg-gray-100 rounded" />
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {categoria.productos.map((prod: any) => (
@@ -130,13 +141,12 @@ export const MeseroUI = () => {
               <button
                 key={mesa.id}
                 onClick={() => setMesaSeleccionada(mesa)}
-                className={`w-12 h-10 rounded-lg font-bold text-sm transition-all ${
-                  mesaSeleccionada?.id === mesa.id
+                className={`w-12 h-10 rounded-lg font-bold text-sm transition-all ${mesaSeleccionada?.id === mesa.id
                     ? 'bg-secondary text-white shadow-md ring-2 ring-secondary ring-offset-1'
                     : mesa.estado === 'ocupada'
                       ? 'bg-red-100 text-red-500 border border-red-200'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-secondary hover:text-secondary'
-                }`}
+                  }`}
               >
                 {mesa.numero}
               </button>
@@ -160,11 +170,11 @@ export const MeseroUI = () => {
                 </div>
                 <div className="flex items-center gap-2 bg-gray-100 rounded-full px-2 py-1 shrink-0">
                   <button onClick={() => actualizarCantidad(item.id, -1)} className="text-gray-500 hover:text-secondary transition">
-                    {item.cantidad === 1 ? <Trash2 size={14}/> : <Minus size={14}/>}
+                    {item.cantidad === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
                   </button>
                   <span className="w-4 text-center text-sm font-bold text-gray-700">{item.cantidad}</span>
                   <button onClick={() => actualizarCantidad(item.id, 1)} className="text-gray-500 hover:text-primary transition">
-                    <Plus size={14}/>
+                    <Plus size={14} />
                   </button>
                 </div>
               </div>
@@ -184,7 +194,7 @@ export const MeseroUI = () => {
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: (!mesaSeleccionada || carrito.length === 0) ? '#e5e7eb' : 'linear-gradient(135deg,#F5A623,#D4880A)', color: (!mesaSeleccionada || carrito.length === 0) ? '#9ca3af' : '#1a1a1a' }}
           >
-            <Send size={16}/>
+            <Send size={16} />
             {mesaSeleccionada ? `Enviar a Cocina — Mesa ${mesaSeleccionada.numero}` : 'Selecciona una mesa'}
           </button>
         </div>
