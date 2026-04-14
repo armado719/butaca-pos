@@ -8,6 +8,8 @@ import authRoutes from './routes/auth';
 import mesasRoutes from './routes/mesas';
 import productosRoutes from './routes/productos';
 import pedidosRoutes from './routes/pedidos';
+import adminRoutes from './routes/admin';
+import reportesRoutes from './routes/reportes';
 
 dotenv.config();
 
@@ -35,10 +37,12 @@ app.use((req, res, next) => {
 });
 
 // Rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/mesas', mesasRoutes);
+app.use('/api/auth',     authRoutes);
+app.use('/api/mesas',    mesasRoutes);
 app.use('/api/productos', productosRoutes);
-app.use('/api/pedidos', pedidosRoutes);
+app.use('/api/pedidos',  pedidosRoutes);
+app.use('/api/admin',    adminRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 app.get('/', (req, res) => {
   res.send('API La Butaca Restaurante funcionando correctamente.');

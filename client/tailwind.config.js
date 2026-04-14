@@ -7,11 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        darkBg: '#12151A', // Fondo oscuro profundo inspirado en la foto
-        primary: '#f9d25b', // Amarillo de la firma y botón (más cálido y claro)
-        secondary: '#d97706', // Naranja/Dorado oscuro para hovers y acentos
-        textLight: '#ffffff'
-      }
+        darkBg:   '#12151A', // Fondo oscuro principal
+        surface:  '#1C1F26', // Superficie de tarjetas
+        primary:  '#F5A623', // Dorado/Ámbar — color firma La Butaca
+        secondary:'#B5201E', // Rojo carmesí — color logo La Butaca
+        accent:   '#D4880A', // Dorado oscuro para hovers
+        textLight:'#FFFFFF',
+      },
+      fontFamily: {
+        display: ['"Bebas Neue"', 'Impact', 'sans-serif'],
+      },
     },
   },
   plugins: [],
