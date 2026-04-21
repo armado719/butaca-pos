@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { crearPedido, getPendientes, actualizarEstado, getCaja, pagarPedido } from '../controllers/pedidos';
 import { validateToken } from '../middlewares/validateToken';
+import { authorizeRoles } from '../middlewares/authorizeRoles';
 
 const router = Router();
 
-router.get('/pendientes', validateToken, getPendientes);
-router.get('/caja', validateToken, getCaja);
-router.post('/', validateToken, crearPedido);
-router.post('/:id/pagar', validateToken, pagarPedido);
-router.put('/:id/estado', validateToken, actualizarEstado);
+router.post('/',             validateToken, authorizeRoles('mesero', 'admin'),  crearPedido);
+router.get('/pendientes',   validateToken, authorizeRoles('cocina', 'admin'),  getPendientes);
+router.put('/:id/estado',   validateToken, authorizeRoles('cocina', 'admin'),  actualizarEstado);
+router.get('/caja',         validateToken, authorizeRoles('cajero', 'admin'),  getCaja);
+router.post('/:id/pagar',   validateToken, authorizeRoles('cajero', 'admin'),  pagarPedido);
 
 export default router;

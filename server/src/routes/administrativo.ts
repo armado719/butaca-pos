@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { validateToken } from '../middlewares/validateToken';
+import { authorizeRoles } from '../middlewares/authorizeRoles';
 import {
   getEmpleados, crearEmpleado, actualizarEmpleado,
   getEgresos, crearEgreso, eliminarEgreso, actualizarEgreso,
-  getInsumos, crearInsumo, actualizarStock, eliminarInsumo, actualizarInsumo
+  getInsumos, crearInsumo, actualizarStock, eliminarInsumo, actualizarInsumo,
 } from '../controllers/administrativo';
 
 const router = Router();
-router.use(validateToken);
+router.use(validateToken, authorizeRoles('admin'));
 
 // Empleados
 router.get('/empleados',        getEmpleados);
