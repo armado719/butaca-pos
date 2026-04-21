@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -29,6 +30,8 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3001;
 
+// Helmet primero: agrega cabeceras de seguridad a todas las respuestas
+app.use(helmet());
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
