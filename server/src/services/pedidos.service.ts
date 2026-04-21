@@ -1,18 +1,9 @@
 import pool from '../db/connection';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { Server } from 'socket.io';
+import type { ProductoItem } from '../schemas/pedidos.schema';
 
-interface ProductoItem {
-  id: number;
-  cantidad: number;
-  precio: number;
-  observaciones?: string;
-}
-
-interface Usuario {
-  id: number;
-  nombre: string;
-}
+interface Usuario { id: number; nombre: string; }
 
 export async function createOrder(
   mesa_id: number,
@@ -24,30 +15,24 @@ export async function createOrder(
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-
     const total = productos.reduce((sum, p) => sum + p.precio * p.cantidad, 0);
-
     const [result] = await conn.query<ResultSetHeader>(
       'INSERT INTO pedidos (mesa_id, usuario_id, estado, total, observaciones) VALUES (?, ?, ?, ?, ?)',
       [mesa_id, usuario.id, 'pendiente', total, observaciones || '']
     );
     const pedido_id = result.insertId;
-
     for (const item of productos) {
       await conn.query(
         'INSERT INTO pedido_detalle (pedido_id, producto_id, cantidad, precio_unitario, subtotal, observaciones) VALUES (?, ?, ?, ?, ?, ?)',
         [pedido_id, item.id, item.cantidad, item.precio, item.precio * item.cantidad, item.observaciones || '']
       );
     }
-
     await conn.query('UPDATE mesas SET estado = "ocupada" WHERE id = ?', [mesa_id]);
     await conn.commit();
-
     io?.emit('nueva_comanda', {
       id: pedido_id, mesa_id, mesero: usuario.nombre,
       productos, observaciones, estado: 'pendiente', created_at: new Date(),
     });
-
     return { pedido_id };
   } catch (error) {
     await conn.rollback();
@@ -57,15 +42,14 @@ export async function createOrder(
   }
 }
 
-function groupByPedido<T extends Record<string, any>>(
-  rows: T[],
-  extraFields: (keyof T)[]
-): any[] {
+function groupByPedido<T extends Record<string, any>>(rows: T[], extraFields: (keyof T)[]): any[] {
   const map = new Map<number, any>();
   for (const row of rows) {
     if (!map.has(row.id)) {
-      const base: any = { id: row.id, mesa_id: row.mesa_id, estado: row.estado,
-        created_at: row.created_at, mesero: row.mesero, mesa_numero: row.mesa_numero, productos: [] };
+      const base: any = {
+        id: row.id, mesa_id: row.mesa_id, estado: row.estado,
+        created_at: row.created_at, mesero: row.mesero, mesa_numero: row.mesa_numero, productos: [],
+      };
       for (const f of extraFields) base[f as string] = row[f];
       map.set(row.id, base);
     }
@@ -73,8 +57,8 @@ function groupByPedido<T extends Record<string, any>>(
       map.get(row.id).productos.push({
         nombre: row.producto_nombre,
         cantidad: row.cantidad,
-        ...(row.subtotal !== undefined  ? { subtotal: row.subtotal }         : {}),
-        ...(row.det_obs  !== undefined  ? { observaciones: row.det_obs }     : {}),
+        ...(row.subtotal !== undefined ? { subtotal: row.subtotal }     : {}),
+        ...(row.det_obs  !== undefined ? { observaciones: row.det_obs } : {}),
       });
     }
   }
@@ -97,11 +81,7 @@ export async function getPendingOrders(): Promise<any[]> {
   return groupByPedido(rows, ['observaciones']);
 }
 
-export async function updateOrderStatus(
-  id: string,
-  estado: string,
-  io?: Server
-): Promise<void> {
+export async function updateOrderStatus(id: string, estado: string, io?: Server): Promise<void> {
   await pool.query('UPDATE pedidos SET estado = ? WHERE id = ?', [estado, id]);
   io?.emit('pedido_actualizado', { id: parseInt(id), estado });
 }

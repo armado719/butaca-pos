@@ -1,17 +1,15 @@
 import { z } from 'zod';
 
+const productoItemSchema = z.object({
+  id:            z.number().int().positive(),
+  cantidad:      z.number().int().positive('La cantidad debe ser mayor a 0'),
+  precio:        z.number().positive('El precio debe ser mayor a 0'),
+  observaciones: z.string().optional(),
+});
+
 export const crearPedidoSchema = z.object({
-  mesa_id: z.number().int().positive('mesa_id debe ser un entero positivo'),
-  productos: z
-    .array(
-      z.object({
-        id: z.number().int().positive('El id del producto debe ser un entero positivo'),
-        cantidad: z.number().int().positive('La cantidad debe ser mayor a 0'),
-        precio: z.number().positive('El precio debe ser mayor a 0'),
-        observaciones: z.string().optional(),
-      })
-    )
-    .min(1, 'El pedido debe incluir al menos un producto'),
+  mesa_id:      z.number().int().positive('mesa_id debe ser un entero positivo'),
+  productos:    z.array(productoItemSchema).min(1, 'El pedido debe incluir al menos un producto'),
   observaciones: z.string().optional(),
 });
 
@@ -27,3 +25,8 @@ export const pagarPedidoSchema = z.object({
   }),
   monto: z.number().positive('El monto debe ser mayor a 0'),
 });
+
+export type CrearPedidoDTO      = z.infer<typeof crearPedidoSchema>;
+export type ActualizarEstadoDTO = z.infer<typeof actualizarEstadoSchema>;
+export type PagarPedidoDTO      = z.infer<typeof pagarPedidoSchema>;
+export type ProductoItem        = z.infer<typeof productoItemSchema>;
