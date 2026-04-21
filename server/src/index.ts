@@ -12,6 +12,7 @@ import pedidosRoutes from './routes/pedidos';
 import adminRoutes from './routes/admin';
 import reportesRoutes from './routes/reportes';
 import administrativoRoutes from './routes/administrativo';
+import { errorHandler } from './middlewares/errorHandler';
 
 dotenv.config();
 
@@ -22,20 +23,16 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const allowedOrigins = FRONTEND_URL.split(',').map((o) => o.trim());
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-  },
+  cors: { origin: allowedOrigins, methods: ['GET', 'POST'] },
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Helmet primero: agrega cabeceras de seguridad a todas las respuestas
 app.use(helmet());
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   (req as any).io = io;
   next();
 });
@@ -52,11 +49,12 @@ app.get('/', (_req, res) => {
   res.send('API La Butaca Restaurante funcionando correctamente.');
 });
 
+// Debe ir después de todas las rutas
+app.use(errorHandler);
+
 io.on('connection', (socket) => {
   console.log('Nuevo cliente conectado:', socket.id);
-  socket.on('disconnect', () => {
-    console.log('Cliente desconectado:', socket.id);
-  });
+  socket.on('disconnect', () => console.log('Cliente desconectado:', socket.id));
 });
 
 httpServer.listen(PORT, () => {

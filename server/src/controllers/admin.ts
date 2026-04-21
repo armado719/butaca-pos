@@ -1,20 +1,20 @@
-import { Request, Response } from 'express';
+import { Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import pool from '../db/connection';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { CustomRequest } from '../middlewares/validateToken';
 
-// ─── MESAS ──────────────────────────────────────────────────────────────────
+// ── MESAS ──────────────────────────────────────────────────────────────────────
 
-export const getMesas = async (_req: Request, res: Response): Promise<void> => {
+export const getMesas = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM mesas ORDER BY numero ASC');
     res.json(rows);
-  } catch { res.status(500).json({ msg: 'Error al obtener mesas' }); }
+  } catch (error) { next(error); }
 };
 
-export const crearMesa = async (req: Request, res: Response): Promise<void> => {
+export const crearMesa = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { numero, capacidad } = req.body;
-  if (!numero) { res.status(400).json({ msg: 'Número de mesa requerido' }); return; }
   try {
     const [result] = await pool.query<ResultSetHeader>(
       'INSERT INTO mesas (numero, capacidad) VALUES (?, ?)',
@@ -23,11 +23,11 @@ export const crearMesa = async (req: Request, res: Response): Promise<void> => {
     res.status(201).json({ id: result.insertId, numero, capacidad: capacidad || 4, estado: 'disponible' });
   } catch (err: any) {
     if (err.code === 'ER_DUP_ENTRY') { res.status(400).json({ msg: 'El número de mesa ya existe' }); return; }
-    res.status(500).json({ msg: 'Error al crear mesa' });
+    next(err);
   }
 };
 
-export const actualizarMesa = async (req: Request, res: Response): Promise<void> => {
+export const actualizarMesa = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
   const { numero, capacidad, estado } = req.body;
   try {
@@ -36,29 +36,29 @@ export const actualizarMesa = async (req: Request, res: Response): Promise<void>
       [numero ?? null, capacidad ?? null, estado ?? null, id]
     );
     res.json({ msg: 'Mesa actualizada' });
-  } catch { res.status(500).json({ msg: 'Error al actualizar mesa' }); }
+  } catch (error) { next(error); }
 };
 
-export const eliminarMesa = async (req: Request, res: Response): Promise<void> => {
+export const eliminarMesa = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM mesas WHERE id = ?', [id]);
     res.json({ msg: 'Mesa eliminada' });
-  } catch { res.status(500).json({ msg: 'Error al eliminar mesa' }); }
+  } catch (error) { next(error); }
 };
 
-// ─── CATEGORÍAS ──────────────────────────────────────────────────────────────
+// ── CATEGORÍAS ────────────────────────────────────────────────────────────────
 
-export const getCategorias = async (_req: Request, res: Response): Promise<void> => {
+export const getCategorias = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM categorias ORDER BY nombre ASC');
     res.json(rows);
-  } catch { res.status(500).json({ msg: 'Error al obtener categorías' }); }
+  } catch (error) { next(error); }
 };
 
-// ─── PRODUCTOS ───────────────────────────────────────────────────────────────
+// ── PRODUCTOS ───────────────────────────────────────────────────────────────
 
-export const getProductos = async (_req: Request, res: Response): Promise<void> => {
+export const getProductos = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`
       SELECT p.*, c.nombre AS categoria_nombre
@@ -67,24 +67,21 @@ export const getProductos = async (_req: Request, res: Response): Promise<void> 
       ORDER BY c.nombre, p.nombre ASC
     `);
     res.json(rows);
-  } catch { res.status(500).json({ msg: 'Error al obtener productos' }); }
+  } catch (error) { next(error); }
 };
 
-export const crearProducto = async (req: Request, res: Response): Promise<void> => {
+export const crearProducto = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { categoria_id, nombre, descripcion, precio } = req.body;
-  if (!categoria_id || !nombre || !precio) {
-    res.status(400).json({ msg: 'categoria_id, nombre y precio son requeridos' }); return;
-  }
   try {
     const [result] = await pool.query<ResultSetHeader>(
       'INSERT INTO productos (categoria_id, nombre, descripcion, precio) VALUES (?, ?, ?, ?)',
       [categoria_id, nombre, descripcion || null, precio]
     );
     res.status(201).json({ id: result.insertId, categoria_id, nombre, disponible: 1 });
-  } catch { res.status(500).json({ msg: 'Error al crear producto' }); }
+  } catch (error) { next(error); }
 };
 
-export const actualizarProducto = async (req: Request, res: Response): Promise<void> => {
+export const actualizarProducto = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
   const { categoria_id, nombre, descripcion, precio, disponible } = req.body;
   try {
@@ -101,33 +98,30 @@ export const actualizarProducto = async (req: Request, res: Response): Promise<v
        precio ?? null, disponible !== undefined ? disponible : null, id]
     );
     res.json({ msg: 'Producto actualizado' });
-  } catch { res.status(500).json({ msg: 'Error al actualizar producto' }); }
+  } catch (error) { next(error); }
 };
 
-export const toggleProducto = async (req: Request, res: Response): Promise<void> => {
+export const toggleProducto = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
   try {
     await pool.query('UPDATE productos SET disponible = NOT disponible WHERE id = ?', [id]);
     res.json({ msg: 'Disponibilidad actualizada' });
-  } catch { res.status(500).json({ msg: 'Error al actualizar disponibilidad' }); }
+  } catch (error) { next(error); }
 };
 
-// ─── USUARIOS ────────────────────────────────────────────────────────────────
+// ── USUARIOS ─────────────────────────────────────────────────────────────────
 
-export const getUsuarios = async (_req: Request, res: Response): Promise<void> => {
+export const getUsuarios = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       'SELECT id, nombre, email, rol, activo, created_at FROM usuarios ORDER BY nombre ASC'
     );
     res.json(rows);
-  } catch { res.status(500).json({ msg: 'Error al obtener usuarios' }); }
+  } catch (error) { next(error); }
 };
 
-export const crearUsuario = async (req: Request, res: Response): Promise<void> => {
+export const crearUsuario = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { nombre, email, password, rol } = req.body;
-  if (!nombre || !email || !password || !rol) {
-    res.status(400).json({ msg: 'Todos los campos son requeridos' }); return;
-  }
   try {
     const hash = await bcrypt.hash(password, 10);
     const [result] = await pool.query<ResultSetHeader>(
@@ -137,11 +131,11 @@ export const crearUsuario = async (req: Request, res: Response): Promise<void> =
     res.status(201).json({ id: result.insertId, nombre, email, rol, activo: 1 });
   } catch (err: any) {
     if (err.code === 'ER_DUP_ENTRY') { res.status(400).json({ msg: 'El email ya está registrado' }); return; }
-    res.status(500).json({ msg: 'Error al crear usuario' });
+    next(err);
   }
 };
 
-export const actualizarUsuario = async (req: Request, res: Response): Promise<void> => {
+export const actualizarUsuario = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
   const { nombre, email, password, rol, activo } = req.body;
   try {
@@ -159,13 +153,13 @@ export const actualizarUsuario = async (req: Request, res: Response): Promise<vo
        activo !== undefined ? activo : null, id]
     );
     res.json({ msg: 'Usuario actualizado' });
-  } catch { res.status(500).json({ msg: 'Error al actualizar usuario' }); }
+  } catch (error) { next(error); }
 };
 
-export const toggleUsuario = async (req: Request, res: Response): Promise<void> => {
+export const toggleUsuario = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
   try {
     await pool.query('UPDATE usuarios SET activo = NOT activo WHERE id = ?', [id]);
     res.json({ msg: 'Estado actualizado' });
-  } catch { res.status(500).json({ msg: 'Error al actualizar usuario' }); }
+  } catch (error) { next(error); }
 };

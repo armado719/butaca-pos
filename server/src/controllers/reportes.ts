@@ -1,15 +1,16 @@
-import { Request, Response } from 'express';
+import { Response, NextFunction } from 'express';
 import pool from '../db/connection';
 import { RowDataPacket } from 'mysql2';
+import { CustomRequest } from '../middlewares/validateToken';
 
-export const ventasDelDia = async (req: Request, res: Response): Promise<void> => {
+export const ventasDelDia = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const fecha = (req.query.fecha as string) || new Date().toISOString().split('T')[0];
 
     const [resumen] = await pool.query<RowDataPacket[]>(`
       SELECT
-        COUNT(DISTINCT p.id)                                                               AS total_pedidos,
-        COALESCE(SUM(pg.monto), 0)                                                         AS total_ventas,
+        COUNT(DISTINCT p.id)                                                                  AS total_pedidos,
+        COALESCE(SUM(pg.monto), 0)                                                            AS total_ventas,
         COALESCE(SUM(CASE WHEN pg.metodo_pago = 'efectivo'      THEN pg.monto ELSE 0 END), 0) AS efectivo,
         COALESCE(SUM(CASE WHEN pg.metodo_pago = 'nequi'         THEN pg.monto ELSE 0 END), 0) AS nequi,
         COALESCE(SUM(CASE WHEN pg.metodo_pago = 'daviplata'     THEN pg.monto ELSE 0 END), 0) AS daviplata,
@@ -44,7 +45,6 @@ export const ventasDelDia = async (req: Request, res: Response): Promise<void> =
 
     res.json({ fecha, resumen: resumen[0], top_productos: topProductos, ultimos_pedidos: ultimosPedidos });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: 'Error al obtener reporte' });
+    next(error);
   }
 };

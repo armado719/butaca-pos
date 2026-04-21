@@ -1,8 +1,9 @@
-import { Request, Response } from 'express';
+import { Response, NextFunction } from 'express';
 import pool from '../db/connection';
 import { RowDataPacket } from 'mysql2';
+import { CustomRequest } from '../middlewares/validateToken';
 
-export const getProductosAgrupados = async (_req: Request, res: Response): Promise<void> => {
+export const getProductosAgrupados = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`
       SELECT p.id, p.nombre, p.descripcion, p.precio, p.disponible,
@@ -29,7 +30,6 @@ export const getProductosAgrupados = async (_req: Request, res: Response): Promi
 
     res.json(Object.values(agrupado));
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: 'Error al obtener productos' });
+    next(error);
   }
 };
