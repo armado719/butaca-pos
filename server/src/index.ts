@@ -17,48 +17,45 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// Configuración de Socket.io
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const allowedOrigins = FRONTEND_URL.split(',').map((o) => o.trim());
+
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174"],
-    methods: ['GET', 'POST']
-  }
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+  },
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Middlewares
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
-// Inyectar io en las request para usarlo en los controladores
 app.use((req, res, next) => {
   (req as any).io = io;
   next();
 });
 
-// Rutas
-app.use('/api/auth',     authRoutes);
-app.use('/api/mesas',    mesasRoutes);
-app.use('/api/productos', productosRoutes);
-app.use('/api/pedidos',  pedidosRoutes);
-app.use('/api/admin',    adminRoutes);
-app.use('/api/reportes', reportesRoutes);
+app.use('/api/auth',           authRoutes);
+app.use('/api/mesas',          mesasRoutes);
+app.use('/api/productos',      productosRoutes);
+app.use('/api/pedidos',        pedidosRoutes);
+app.use('/api/admin',          adminRoutes);
+app.use('/api/reportes',       reportesRoutes);
 app.use('/api/administrativo', administrativoRoutes);
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.send('API La Butaca Restaurante funcionando correctamente.');
 });
 
-// Eventos de Socket.io
 io.on('connection', (socket) => {
   console.log('Nuevo cliente conectado:', socket.id);
-
   socket.on('disconnect', () => {
     console.log('Cliente desconectado:', socket.id);
   });
 });
 
 httpServer.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });

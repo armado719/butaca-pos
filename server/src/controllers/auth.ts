@@ -4,6 +4,11 @@ import jwt from 'jsonwebtoken';
 import pool from '../db/connection';
 import { RowDataPacket } from 'mysql2';
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('La variable de entorno JWT_SECRET es obligatoria. Definila en server/.env');
+}
+
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
@@ -27,7 +32,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, rol: usuario.rol, nombre: usuario.nombre },
-      process.env.JWT_SECRET || 'supersecretkey',
+      JWT_SECRET,
       { expiresIn: '8h' }
     );
 
