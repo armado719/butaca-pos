@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '../lib/logger';
 
 export class AppError extends Error {
   constructor(public statusCode: number, message: string) {
@@ -16,9 +17,9 @@ export const errorHandler = (
   const statusCode = err.statusCode ?? 500;
   const message = statusCode === 500 ? 'Error interno del servidor' : err.message;
 
-  console.error(
-    `[${new Date().toISOString()}] ${req.method} ${req.path} → ${statusCode}:`,
-    err.message
+  logger.error(
+    { method: req.method, path: req.path, statusCode, err: err.message },
+    'Request error'
   );
 
   res.status(statusCode).json({ msg: message });

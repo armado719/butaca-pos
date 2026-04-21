@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin';
 import reportesRoutes from './routes/reportes';
 import administrativoRoutes from './routes/administrativo';
 import { errorHandler } from './middlewares/errorHandler';
+import logger from './lib/logger';
 
 dotenv.config();
 
@@ -49,14 +50,15 @@ app.get('/', (_req, res) => {
   res.send('API La Butaca Restaurante funcionando correctamente.');
 });
 
-// Debe ir después de todas las rutas
 app.use(errorHandler);
 
 io.on('connection', (socket) => {
-  console.log('Nuevo cliente conectado:', socket.id);
-  socket.on('disconnect', () => console.log('Cliente desconectado:', socket.id));
+  logger.info({ socketId: socket.id }, 'Cliente conectado');
+  socket.on('disconnect', () => {
+    logger.info({ socketId: socket.id }, 'Cliente desconectado');
+  });
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+  logger.info({ port: PORT, origins: allowedOrigins }, 'Servidor iniciado');
 });
