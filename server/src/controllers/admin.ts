@@ -3,13 +3,19 @@ import bcrypt from 'bcrypt';
 import pool from '../db/connection';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { CustomRequest } from '../middlewares/validateToken';
+import { getPaginationParams, buildPaginatedResponse, countRows } from '../lib/paginate';
 
 // ── MESAS ──────────────────────────────────────────────────────────────────────
 
-export const getMesas = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
+export const getMesas = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM mesas ORDER BY numero ASC');
-    res.json(rows);
+    const params = getPaginationParams(req.query);
+    const total  = await countRows('mesas');
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT * FROM mesas ORDER BY numero ASC LIMIT ? OFFSET ?',
+      [params.limit, params.offset]
+    );
+    res.json(buildPaginatedResponse(rows, total, params));
   } catch (error) { next(error); }
 };
 
@@ -58,15 +64,19 @@ export const getCategorias = async (_req: CustomRequest, res: Response, next: Ne
 
 // ── PRODUCTOS ───────────────────────────────────────────────────────────────
 
-export const getProductos = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
+export const getProductos = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>(`
-      SELECT p.*, c.nombre AS categoria_nombre
-      FROM productos p
-      JOIN categorias c ON p.categoria_id = c.id
-      ORDER BY c.nombre, p.nombre ASC
-    `);
-    res.json(rows);
+    const params = getPaginationParams(req.query);
+    const total  = await countRows('productos');
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT p.*, c.nombre AS categoria_nombre
+       FROM productos p
+       JOIN categorias c ON p.categoria_id = c.id
+       ORDER BY c.nombre, p.nombre ASC
+       LIMIT ? OFFSET ?`,
+      [params.limit, params.offset]
+    );
+    res.json(buildPaginatedResponse(rows, total, params));
   } catch (error) { next(error); }
 };
 
@@ -111,12 +121,15 @@ export const toggleProducto = async (req: CustomRequest, res: Response, next: Ne
 
 // ── USUARIOS ─────────────────────────────────────────────────────────────────
 
-export const getUsuarios = async (_req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
+export const getUsuarios = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
+    const params = getPaginationParams(req.query);
+    const total  = await countRows('usuarios');
     const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT id, nombre, email, rol, activo, created_at FROM usuarios ORDER BY nombre ASC'
+      'SELECT id, nombre, email, rol, activo, created_at FROM usuarios ORDER BY nombre ASC LIMIT ? OFFSET ?',
+      [params.limit, params.offset]
     );
-    res.json(rows);
+    res.json(buildPaginatedResponse(rows, total, params));
   } catch (error) { next(error); }
 };
 
