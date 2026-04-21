@@ -7,7 +7,13 @@ if (!JWT_SECRET) {
 }
 
 export interface CustomRequest extends Request {
-  usuario?: any;
+  usuario?: {
+    id: number;
+    email: string;
+    rol: string;
+    nombre: string;
+  };
+  io?: any;
 }
 
 export const validateToken = (req: CustomRequest, res: Response, next: NextFunction): void => {
@@ -16,7 +22,7 @@ export const validateToken = (req: CustomRequest, res: Response, next: NextFunct
   if (headerToken != undefined && headerToken.startsWith('Bearer ')) {
     try {
       const bearerToken = headerToken.slice(7);
-      const payload = jwt.verify(bearerToken, JWT_SECRET);
+      const payload = jwt.verify(bearerToken, JWT_SECRET) as CustomRequest['usuario'];
       req.usuario = payload;
       next();
     } catch (error) {

@@ -1,23 +1,23 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import pool from '../db/connection';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { CustomRequest } from '../middlewares/validateToken';
 
 // ── EMPLEADOS ───────────────────────────────────────────────────────────────────
 
-export const getEmpleados = async (_req: Request, res: Response): Promise<void> => {
+export const getEmpleados = async (_req: CustomRequest, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM empleados ORDER BY nombre ASC');
     res.json(rows);
   } catch { res.status(500).json({ msg: 'Error al obtener empleados' }); }
 };
 
-export const crearEmpleado = async (req: Request, res: Response): Promise<void> => {
+export const crearEmpleado = async (req: CustomRequest, res: Response): Promise<void> => {
   const {
     nombre, documento, cargo, salario_base, fecha_ingreso,
     telefono, direccion, fecha_nacimiento, banco, cuenta_bancaria,
   } = req.body;
 
-  // Campos obligatorios
   if (!nombre || !documento || !cargo || salario_base === undefined || !fecha_ingreso) {
     res.status(400).json({
       msg: 'Campos obligatorios: nombre, documento, cargo, salario_base, fecha_ingreso',
@@ -25,15 +25,13 @@ export const crearEmpleado = async (req: Request, res: Response): Promise<void> 
     return;
   }
 
-  // Tipos y rangos
   const salario = Number(salario_base);
   if (!Number.isFinite(salario) || salario < 0) {
     res.status(400).json({ msg: 'salario_base debe ser un número mayor o igual a 0' });
     return;
   }
 
-  const fechaIngreso = new Date(fecha_ingreso);
-  if (isNaN(fechaIngreso.getTime())) {
+  if (isNaN(new Date(fecha_ingreso).getTime())) {
     res.status(400).json({ msg: 'fecha_ingreso no es una fecha válida (formato esperado: YYYY-MM-DD)' });
     return;
   }
@@ -64,7 +62,7 @@ export const crearEmpleado = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const actualizarEmpleado = async (req: Request, res: Response): Promise<void> => {
+export const actualizarEmpleado = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { nombre, documento, cargo, salario_base, activo, telefono, direccion, fecha_nacimiento, banco, cuenta_bancaria } = req.body;
   try {
@@ -78,7 +76,7 @@ export const actualizarEmpleado = async (req: Request, res: Response): Promise<v
 
 // ── EGRESOS ─────────────────────────────────────────────────────────────────────
 
-export const getEgresos = async (req: Request, res: Response): Promise<void> => {
+export const getEgresos = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
     const { fecha } = req.query;
     const [rows] = await pool.query<RowDataPacket[]>(`
@@ -93,9 +91,9 @@ export const getEgresos = async (req: Request, res: Response): Promise<void> => 
   } catch { res.status(500).json({ msg: 'Error al obtener egresos' }); }
 };
 
-export const crearEgreso = async (req: Request, res: Response): Promise<void> => {
+export const crearEgreso = async (req: CustomRequest, res: Response): Promise<void> => {
   const { concepto, monto, categoria, empleado_id } = req.body;
-  const usuario_id = (req as any).usuario.id;
+  const usuario_id = req.usuario!.id;
   try {
     const [result] = await pool.query<ResultSetHeader>(
       'INSERT INTO egresos (concepto, monto, categoria, empleado_id, usuario_id) VALUES (?, ?, ?, ?, ?)',
@@ -105,7 +103,7 @@ export const crearEgreso = async (req: Request, res: Response): Promise<void> =>
   } catch { res.status(500).json({ msg: 'Error al registrar egreso' }); }
 };
 
-export const actualizarEgreso = async (req: Request, res: Response): Promise<void> => {
+export const actualizarEgreso = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { concepto, monto, categoria, empleado_id } = req.body;
   try {
@@ -117,7 +115,7 @@ export const actualizarEgreso = async (req: Request, res: Response): Promise<voi
   } catch { res.status(500).json({ msg: 'Error al actualizar egreso' }); }
 };
 
-export const eliminarEgreso = async (req: Request, res: Response): Promise<void> => {
+export const eliminarEgreso = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM egresos WHERE id = ?', [id]);
@@ -127,14 +125,14 @@ export const eliminarEgreso = async (req: Request, res: Response): Promise<void>
 
 // ── INSUMOS (INVENTARIO) ───────────────────────────────────────────────────
 
-export const getInsumos = async (_req: Request, res: Response): Promise<void> => {
+export const getInsumos = async (_req: CustomRequest, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>('SELECT * FROM insumos ORDER BY nombre ASC');
     res.json(rows);
   } catch { res.status(500).json({ msg: 'Error al obtener inventario' }); }
 };
 
-export const crearInsumo = async (req: Request, res: Response): Promise<void> => {
+export const crearInsumo = async (req: CustomRequest, res: Response): Promise<void> => {
   const { nombre, unidad_medida, stock_minimo, precio_compra } = req.body;
   try {
     const [result] = await pool.query<ResultSetHeader>(
@@ -145,7 +143,7 @@ export const crearInsumo = async (req: Request, res: Response): Promise<void> =>
   } catch { res.status(500).json({ msg: 'Error al crear insumo' }); }
 };
 
-export const actualizarStock = async (req: Request, res: Response): Promise<void> => {
+export const actualizarStock = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { cantidad } = req.body;
 
@@ -161,7 +159,7 @@ export const actualizarStock = async (req: Request, res: Response): Promise<void
   } catch { res.status(500).json({ msg: 'Error al actualizar stock' }); }
 };
 
-export const actualizarInsumo = async (req: Request, res: Response): Promise<void> => {
+export const actualizarInsumo = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { nombre, unidad_medida, stock_minimo, precio_compra } = req.body;
   try {
@@ -173,7 +171,7 @@ export const actualizarInsumo = async (req: Request, res: Response): Promise<voi
   } catch { res.status(500).json({ msg: 'Error al actualizar insumo' }); }
 };
 
-export const eliminarInsumo = async (req: Request, res: Response): Promise<void> => {
+export const eliminarInsumo = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM insumos WHERE id = ?', [id]);

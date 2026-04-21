@@ -1,10 +1,11 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import pool from '../db/connection';
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
+import { CustomRequest } from '../middlewares/validateToken';
 
-export const crearPedido = async (req: Request, res: Response): Promise<void> => {
+export const crearPedido = async (req: CustomRequest, res: Response): Promise<void> => {
   const { mesa_id, productos, observaciones } = req.body;
-  const usuario_id = (req as any).usuario.id;
+  const usuario_id = req.usuario!.id;
 
   const conn = await pool.getConnection();
   try {
@@ -30,12 +31,11 @@ export const crearPedido = async (req: Request, res: Response): Promise<void> =>
     await conn.query('UPDATE mesas SET estado = "ocupada" WHERE id = ?', [mesa_id]);
     await conn.commit();
 
-    const io = (req as any).io;
-    if (io) {
-      io.emit('nueva_comanda', {
+    if (req.io) {
+      req.io.emit('nueva_comanda', {
         id: pedido_id,
         mesa_id,
-        mesero: (req as any).usuario.nombre,
+        mesero: req.usuario!.nombre,
         productos,
         observaciones,
         estado: 'pendiente',
@@ -53,7 +53,7 @@ export const crearPedido = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const getPendientes = async (_req: Request, res: Response): Promise<void> => {
+export const getPendientes = async (_req: CustomRequest, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`
       SELECT
@@ -64,8 +64,8 @@ export const getPendientes = async (_req: Request, res: Response): Promise<void>
         pd.observaciones AS det_obs,
         prod.nombre      AS producto_nombre
       FROM pedidos p
-      JOIN usuarios u        ON p.usuario_id  = u.id
-      JOIN mesas m           ON p.mesa_id     = m.id
+      JOIN usuarios u            ON p.usuario_id  = u.id
+      JOIN mesas m               ON p.mesa_id     = m.id
       LEFT JOIN pedido_detalle pd ON pd.pedido_id  = p.id
       LEFT JOIN productos prod    ON pd.producto_id = prod.id
       WHERE p.estado IN ('pendiente', 'en_cocina')
@@ -102,15 +102,14 @@ export const getPendientes = async (_req: Request, res: Response): Promise<void>
   }
 };
 
-export const actualizarEstado = async (req: Request, res: Response): Promise<void> => {
+export const actualizarEstado = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { estado } = req.body;
 
   try {
     await pool.query('UPDATE pedidos SET estado = ? WHERE id = ?', [estado, id]);
 
-    const io = (req as any).io;
-    if (io) io.emit('pedido_actualizado', { id: parseInt(id as string), estado });
+    if (req.io) req.io.emit('pedido_actualizado', { id: parseInt(id), estado });
 
     res.json({ msg: `Estado actualizado a ${estado}` });
   } catch (error) {
@@ -119,7 +118,7 @@ export const actualizarEstado = async (req: Request, res: Response): Promise<voi
   }
 };
 
-export const getCaja = async (_req: Request, res: Response): Promise<void> => {
+export const getCaja = async (_req: CustomRequest, res: Response): Promise<void> => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`
       SELECT
@@ -130,8 +129,8 @@ export const getCaja = async (_req: Request, res: Response): Promise<void> => {
         pd.subtotal,
         prod.nombre AS producto_nombre
       FROM pedidos p
-      JOIN usuarios u        ON p.usuario_id  = u.id
-      JOIN mesas m           ON p.mesa_id     = m.id
+      JOIN usuarios u            ON p.usuario_id  = u.id
+      JOIN mesas m               ON p.mesa_id     = m.id
       LEFT JOIN pedido_detalle pd ON pd.pedido_id  = p.id
       LEFT JOIN productos prod    ON pd.producto_id = prod.id
       WHERE p.estado IN ('listo', 'entregado')
@@ -167,10 +166,10 @@ export const getCaja = async (_req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const pagarPedido = async (req: Request, res: Response): Promise<void> => {
+export const pagarPedido = async (req: CustomRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const { metodo_pago, monto } = req.body;
-  const usuario_id = (req as any).usuario.id;
+  const usuario_id = req.usuario!.id;
 
   const conn = await pool.getConnection();
   try {
@@ -190,8 +189,7 @@ export const pagarPedido = async (req: Request, res: Response): Promise<void> =>
 
     await conn.commit();
 
-    const io = (req as any).io;
-    if (io) io.emit('pedido_pagado', { pedido_id: parseInt(id as string) });
+    if (req.io) req.io.emit('pedido_pagado', { pedido_id: parseInt(id) });
 
     res.json({ msg: 'Pago registrado y mesa liberada con éxito' });
   } catch (error) {
