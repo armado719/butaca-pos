@@ -17,7 +17,8 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.21.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

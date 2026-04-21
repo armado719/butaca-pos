@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { validateToken } from '../middlewares/validateToken';
 import { authorizeRoles } from '../middlewares/authorizeRoles';
+import { validate } from '../middlewares/validate';
+import { crearEmpleadoSchema, crearEgresoSchema } from '../schemas/administrativo.schema';
 import {
   getEmpleados, crearEmpleado, actualizarEmpleado,
   getEgresos, crearEgreso, eliminarEgreso, actualizarEgreso,
@@ -12,12 +14,12 @@ router.use(validateToken, authorizeRoles('admin'));
 
 // Empleados
 router.get('/empleados',        getEmpleados);
-router.post('/empleados',       crearEmpleado);
+router.post('/empleados',       validate(crearEmpleadoSchema), crearEmpleado);
 router.put('/empleados/:id',    actualizarEmpleado);
 
 // Egresos
 router.get('/egresos',          getEgresos);
-router.post('/egresos',         crearEgreso);
+router.post('/egresos',         validate(crearEgresoSchema),   crearEgreso);
 router.put('/egresos/:id',      actualizarEgreso);
 router.delete('/egresos/:id',   eliminarEgreso);
 

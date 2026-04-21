@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { login } from '../controllers/auth';
+import { validate } from '../middlewares/validate';
+import { loginSchema } from '../schemas/auth.schema';
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -15,6 +17,6 @@ const loginLimiter = rateLimit({
 
 const router = Router();
 
-router.post('/login', loginLimiter, login);
+router.post('/login', loginLimiter, validate(loginSchema), login);
 
 export default router;

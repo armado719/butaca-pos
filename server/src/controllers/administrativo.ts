@@ -13,33 +13,11 @@ export const getEmpleados = async (_req: CustomRequest, res: Response): Promise<
 };
 
 export const crearEmpleado = async (req: CustomRequest, res: Response): Promise<void> => {
+  // req.body ya fue validado y parseado por Zod en la ruta
   const {
     nombre, documento, cargo, salario_base, fecha_ingreso,
     telefono, direccion, fecha_nacimiento, banco, cuenta_bancaria,
   } = req.body;
-
-  if (!nombre || !documento || !cargo || salario_base === undefined || !fecha_ingreso) {
-    res.status(400).json({
-      msg: 'Campos obligatorios: nombre, documento, cargo, salario_base, fecha_ingreso',
-    });
-    return;
-  }
-
-  const salario = Number(salario_base);
-  if (!Number.isFinite(salario) || salario < 0) {
-    res.status(400).json({ msg: 'salario_base debe ser un número mayor o igual a 0' });
-    return;
-  }
-
-  if (isNaN(new Date(fecha_ingreso).getTime())) {
-    res.status(400).json({ msg: 'fecha_ingreso no es una fecha válida (formato esperado: YYYY-MM-DD)' });
-    return;
-  }
-
-  if (fecha_nacimiento && isNaN(new Date(fecha_nacimiento).getTime())) {
-    res.status(400).json({ msg: 'fecha_nacimiento no es una fecha válida (formato esperado: YYYY-MM-DD)' });
-    return;
-  }
 
   try {
     const [result] = await pool.query<ResultSetHeader>(
@@ -47,12 +25,12 @@ export const crearEmpleado = async (req: CustomRequest, res: Response): Promise<
         (nombre, documento, cargo, salario_base, fecha_ingreso, telefono, direccion, fecha_nacimiento, banco, cuenta_bancaria)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        nombre.trim(), documento.trim(), cargo.trim(), salario, fecha_ingreso,
+        nombre.trim(), documento.trim(), cargo.trim(), salario_base, fecha_ingreso,
         telefono?.trim() || null, direccion?.trim() || null,
         fecha_nacimiento || null, banco?.trim() || null, cuenta_bancaria?.trim() || null,
       ]
     );
-    res.status(201).json({ id: result.insertId, nombre, documento, cargo, salario_base: salario, activo: true });
+    res.status(201).json({ id: result.insertId, nombre, documento, cargo, salario_base, activo: true });
   } catch (err: any) {
     if (err.code === 'ER_DUP_ENTRY') {
       res.status(400).json({ msg: 'Ya existe un empleado con ese número de documento' });
