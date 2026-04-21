@@ -82,7 +82,49 @@ CREATE TABLE IF NOT EXISTS `pagos` (
   FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`)
 );
 
--- 8. configuracion
+-- 8. empleados
+CREATE TABLE IF NOT EXISTS `empleados` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `nombre` VARCHAR(100) NOT NULL,
+  `documento` VARCHAR(30) NOT NULL UNIQUE,
+  `cargo` VARCHAR(80) NOT NULL,
+  `salario_base` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `fecha_ingreso` DATE NOT NULL,
+  `telefono` VARCHAR(20),
+  `direccion` VARCHAR(255),
+  `fecha_nacimiento` DATE,
+  `banco` VARCHAR(80),
+  `cuenta_bancaria` VARCHAR(30),
+  `activo` BOOLEAN DEFAULT TRUE,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. egresos
+CREATE TABLE IF NOT EXISTS `egresos` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `concepto` VARCHAR(255) NOT NULL,
+  `monto` DECIMAL(12,2) NOT NULL,
+  `categoria` ENUM('nomina', 'insumos', 'servicios', 'mantenimiento', 'otros') NOT NULL DEFAULT 'otros',
+  `empleado_id` INT DEFAULT NULL,
+  `usuario_id` INT NOT NULL,
+  `fecha` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`empleado_id`) REFERENCES `empleados`(`id`) ON DELETE SET NULL,
+  FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`)
+);
+
+-- 10. insumos
+CREATE TABLE IF NOT EXISTS `insumos` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `nombre` VARCHAR(150) NOT NULL,
+  `unidad_medida` VARCHAR(30) NOT NULL,
+  `stock_actual` DECIMAL(10,3) NOT NULL DEFAULT 0.000,
+  `stock_minimo` DECIMAL(10,3) NOT NULL DEFAULT 0.000,
+  `precio_compra` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. configuracion
 CREATE TABLE IF NOT EXISTS `configuracion` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `clave` VARCHAR(100) NOT NULL UNIQUE,
@@ -92,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `configuracion` (
 -- SEEDERS --
 
 -- Usuario Admin ('butaca2024' encriptado con bcrypt)
-INSERT INTO `usuarios` (`nombre`, `email`, `password`, `rol`) 
+INSERT INTO `usuarios` (`nombre`, `email`, `password`, `rol`)
 VALUES ('Administrador', 'admin@labutaca.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', 'admin');
 
 -- Mesas iniciales
@@ -124,14 +166,12 @@ INSERT INTO `productos` (`categoria_id`, `nombre`, `precio`) VALUES
 (1, 'Lomo de Res', 20000),
 (1, 'Picada 4 Carnes Personal', 16500),
 (1, 'Picada 4 Carnes Extra', 22500),
-
 -- Pataconazos
 (2, 'Patacon Mixto', 19000),
 (2, 'Patacon Ranchero', 16500),
 (2, 'Patacon Pizao', 15000),
 (2, 'Patacon Mexicano', 15000),
 (2, 'Patacolos', 11000),
-
 -- Hamburguesas
 (3, 'Tradicional', 11500),
 (3, 'Butaca', 13500),
@@ -147,11 +187,9 @@ INSERT INTO `productos` (`categoria_id`, `nombre`, `precio`) VALUES
 (3, 'Tortiburguer', 12000),
 (3, 'Toxicosteña', 17000),
 (3, 'Garoza Pepa Pig', 23000),
-
 -- Crepes
 (4, 'Ranchero', 15000),
 (4, 'Pollo con Champiñones', 16000),
-
 -- Burritos y Tacos
 (5, 'Burritos Chingones x2', 18500),
 (5, 'Burrito Criollo', 21500),
@@ -162,7 +200,6 @@ INSERT INTO `productos` (`categoria_id`, `nombre`, `precio`) VALUES
 (5, 'Quesadillas', 11500),
 (5, 'Mazorcada', 18500),
 (5, 'Mazorcada Extrema', 23500),
-
 -- Perros y Picadas
 (6, 'Picada Callejera', 25000),
 (6, 'Picada de Suizo', 14500),
@@ -173,7 +210,6 @@ INSERT INTO `productos` (`categoria_id`, `nombre`, `precio`) VALUES
 (6, 'Choriperro', 13000),
 (6, 'Perro a la Butaca', 14000),
 (6, 'Perro Mexicano', 12000),
-
 -- Bebidas
 (7, 'Granizados en Leche', 7000),
 (7, 'Piña Colada', 8000),
