@@ -55,27 +55,47 @@ export const crearPedido = async (req: Request, res: Response): Promise<void> =>
 
 export const getPendientes = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const [pedidos] = await pool.query<RowDataPacket[]>(`
-      SELECT p.id, p.mesa_id, p.estado, p.observaciones, p.created_at,
-             u.nombre as mesero, m.numero as mesa_numero
+    const [rows] = await pool.query<RowDataPacket[]>(`
+      SELECT
+        p.id, p.mesa_id, p.estado, p.observaciones, p.created_at,
+        u.nombre  AS mesero,
+        m.numero  AS mesa_numero,
+        pd.cantidad,
+        pd.observaciones AS det_obs,
+        prod.nombre      AS producto_nombre
       FROM pedidos p
-      JOIN usuarios u ON p.usuario_id = u.id
-      JOIN mesas m    ON p.mesa_id    = m.id
+      JOIN usuarios u        ON p.usuario_id  = u.id
+      JOIN mesas m           ON p.mesa_id     = m.id
+      LEFT JOIN pedido_detalle pd ON pd.pedido_id  = p.id
+      LEFT JOIN productos prod    ON pd.producto_id = prod.id
       WHERE p.estado IN ('pendiente', 'en_cocina')
       ORDER BY p.created_at ASC
     `);
 
-    for (const pedido of pedidos) {
-      const [detalles] = await pool.query<RowDataPacket[]>(`
-        SELECT pd.cantidad, pd.observaciones, prod.nombre
-        FROM pedido_detalle pd
-        JOIN productos prod ON pd.producto_id = prod.id
-        WHERE pd.pedido_id = ?
-      `, [pedido.id]);
-      pedido.productos = detalles;
+    const pedidosMap = new Map<number, any>();
+    for (const row of rows) {
+      if (!pedidosMap.has(row.id)) {
+        pedidosMap.set(row.id, {
+          id: row.id,
+          mesa_id: row.mesa_id,
+          estado: row.estado,
+          observaciones: row.observaciones,
+          created_at: row.created_at,
+          mesero: row.mesero,
+          mesa_numero: row.mesa_numero,
+          productos: [],
+        });
+      }
+      if (row.producto_nombre) {
+        pedidosMap.get(row.id).productos.push({
+          nombre: row.producto_nombre,
+          cantidad: row.cantidad,
+          observaciones: row.det_obs,
+        });
+      }
     }
 
-    res.json(pedidos);
+    res.json([...pedidosMap.values()]);
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: 'Error al obtener pedidos pendientes' });
@@ -101,27 +121,47 @@ export const actualizarEstado = async (req: Request, res: Response): Promise<voi
 
 export const getCaja = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const [pedidos] = await pool.query<RowDataPacket[]>(`
-      SELECT p.id, p.mesa_id, p.estado, p.total, p.created_at,
-             u.nombre as mesero, m.numero as mesa_numero
+    const [rows] = await pool.query<RowDataPacket[]>(`
+      SELECT
+        p.id, p.mesa_id, p.estado, p.total, p.created_at,
+        u.nombre  AS mesero,
+        m.numero  AS mesa_numero,
+        pd.cantidad,
+        pd.subtotal,
+        prod.nombre AS producto_nombre
       FROM pedidos p
-      JOIN usuarios u ON p.usuario_id = u.id
-      JOIN mesas m    ON p.mesa_id    = m.id
+      JOIN usuarios u        ON p.usuario_id  = u.id
+      JOIN mesas m           ON p.mesa_id     = m.id
+      LEFT JOIN pedido_detalle pd ON pd.pedido_id  = p.id
+      LEFT JOIN productos prod    ON pd.producto_id = prod.id
       WHERE p.estado IN ('listo', 'entregado')
       ORDER BY p.created_at ASC
     `);
 
-    for (const pedido of pedidos) {
-      const [detalles] = await pool.query<RowDataPacket[]>(`
-        SELECT pd.cantidad, pd.subtotal, prod.nombre
-        FROM pedido_detalle pd
-        JOIN productos prod ON pd.producto_id = prod.id
-        WHERE pd.pedido_id = ?
-      `, [pedido.id]);
-      pedido.productos = detalles;
+    const pedidosMap = new Map<number, any>();
+    for (const row of rows) {
+      if (!pedidosMap.has(row.id)) {
+        pedidosMap.set(row.id, {
+          id: row.id,
+          mesa_id: row.mesa_id,
+          estado: row.estado,
+          total: row.total,
+          created_at: row.created_at,
+          mesero: row.mesero,
+          mesa_numero: row.mesa_numero,
+          productos: [],
+        });
+      }
+      if (row.producto_nombre) {
+        pedidosMap.get(row.id).productos.push({
+          nombre: row.producto_nombre,
+          cantidad: row.cantidad,
+          subtotal: row.subtotal,
+        });
+      }
     }
 
-    res.json(pedidos);
+    res.json([...pedidosMap.values()]);
   } catch (error) {
     res.status(500).json({ msg: 'Error de servidor' });
   }
