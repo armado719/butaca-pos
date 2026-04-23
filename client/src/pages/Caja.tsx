@@ -1,26 +1,24 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '../services/api';
 import { DollarSign, LogOut, Banknote, CreditCard, CheckCircle, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
 
 export const CajaUI = () => {
-  const [pedidos, setPedidos]         = useState<any[]>([]);
+  const [pedidos, setPedidos]           = useState<any[]>([]);
   const [pedidoActivo, setPedidoActivo] = useState<any>(null);
-  const [metodoPago, setMetodoPago]   = useState<string>('efectivo');
+  const [metodoPago, setMetodoPago]     = useState<string>('efectivo');
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => { cargarPedidos(); }, []);
 
   const cargarPedidos = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const { data } = await axios.get('http://localhost:3001/api/pedidos/caja',
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const { data } = await api.get('/pedidos/caja');
       setPedidos(data);
     } catch {
-      alert('Error cargando la caja.');
       navigate('/login');
     }
   };
@@ -28,11 +26,10 @@ export const CajaUI = () => {
   const realizarCobro = async () => {
     if (!pedidoActivo) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:3001/api/pedidos/${pedidoActivo.id}/pagar`,
-        { metodo_pago: metodoPago, monto: pedidoActivo.total },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post(`/pedidos/${pedidoActivo.id}/pagar`, {
+        metodo_pago: metodoPago,
+        monto: pedidoActivo.total,
+      });
       setPedidoActivo(null);
       cargarPedidos();
     } catch {
@@ -49,9 +46,7 @@ export const CajaUI = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden relative">
-      {/* ── IZQUIERDA: Lista pedidos ── */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
           <div className="flex items-center gap-3">
             <ButacaLogo size={40} variant="icon" theme="light" />
@@ -61,28 +56,24 @@ export const CajaUI = () => {
             </div>
           </div>
           <button
-            onClick={() => { localStorage.clear(); navigate('/login'); }}
+            onClick={() => { logout(); navigate('/login'); }}
             className="text-red-400 hover:text-red-500 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition"
           >
             <LogOut size={16} />
           </button>
         </div>
 
-        {/* Lista */}
         <div className="flex-1 overflow-y-auto p-3">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
             Pendientes por cobrar ({pedidos.length})
           </p>
           {pedidos.length === 0 ? (
-            <div className="text-center text-gray-300 mt-10 text-sm">
-              No hay cuentas pendientes
-            </div>
+            <div className="text-center text-gray-300 mt-10 text-sm">No hay cuentas pendientes</div>
           ) : (
             <div className="space-y-2">
               {pedidos.map(p => (
                 <button
-                  key={p.id}
-                  onClick={() => setPedidoActivo(p)}
+                  key={p.id} onClick={() => setPedidoActivo(p)}
                   className={`w-full text-left p-3 rounded-xl border transition-all ${
                     pedidoActivo?.id === p.id
                       ? 'bg-primary/10 border-primary ring-1 ring-primary'
@@ -106,17 +97,14 @@ export const CajaUI = () => {
         </div>
       </div>
 
-      {/* ── DERECHA: Detalle y cobro ── */}
       <div className="flex-1 flex flex-col p-6 overflow-hidden">
         {!pedidoActivo ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-300 select-none">
-            <DollarSign size={72} className="mb-4"/>
+            <DollarSign size={72} className="mb-4" />
             <p className="text-xl font-bold text-gray-400">Selecciona una mesa para cobrar</p>
           </div>
         ) : (
           <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
-
-            {/* Cabecera del ticket */}
             <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-black text-gray-800">
@@ -124,12 +112,9 @@ export const CajaUI = () => {
                 </h2>
                 <p className="text-sm text-gray-400 mt-0.5">Mesero: {pedidoActivo.mesero}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <ButacaLogo size={52} variant="icon" theme="light" />
-              </div>
+              <ButacaLogo size={52} variant="icon" theme="light" />
             </div>
 
-            {/* Productos */}
             <div className="flex-1 overflow-y-auto px-8 py-4">
               <table className="w-full text-sm">
                 <thead>
@@ -144,50 +129,38 @@ export const CajaUI = () => {
                     <tr key={i}>
                       <td className="py-3 font-bold text-gray-600 w-12">{p.cantidad}</td>
                       <td className="py-3 font-medium text-gray-800">{p.nombre}</td>
-                      <td className="py-3 text-right font-bold text-gray-800">
-                        ${Number(p.subtotal).toLocaleString('es-CO')}
-                      </td>
+                      <td className="py-3 text-right font-bold text-gray-800">${Number(p.subtotal).toLocaleString('es-CO')}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Sección de pago */}
             <div className="px-8 py-5 border-t border-gray-100 bg-gray-50">
-              {/* Total */}
               <div className="flex justify-between items-baseline mb-5">
                 <span className="text-gray-500 font-semibold uppercase tracking-widest text-sm">Total a pagar</span>
-                <span className="text-4xl font-black text-gray-800">
-                  ${Number(pedidoActivo.total).toLocaleString('es-CO')}
-                </span>
+                <span className="text-4xl font-black text-gray-800">${Number(pedidoActivo.total).toLocaleString('es-CO')}</span>
               </div>
-
-              {/* Métodos de pago */}
               <div className="grid grid-cols-4 gap-3 mb-5">
                 {metodos.map(m => (
                   <button
-                    key={m.id}
-                    onClick={() => setMetodoPago(m.id)}
+                    key={m.id} onClick={() => setMetodoPago(m.id)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-bold ${
                       metodoPago === m.id
                         ? 'border-secondary bg-secondary/10 text-secondary'
                         : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                     }`}
                   >
-                    <m.icon size={22}/>
-                    {m.label}
+                    <m.icon size={22} />{m.label}
                   </button>
                 ))}
               </div>
-
-              {/* Botón confirmar */}
               <button
                 onClick={realizarCobro}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-black text-base transition-all active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg,#F5A623,#D4880A)', color: '#1a1a1a' }}
               >
-                <CheckCircle size={22}/> CONFIRMAR PAGO
+                <CheckCircle size={22} /> CONFIRMAR PAGO
               </button>
             </div>
           </div>
