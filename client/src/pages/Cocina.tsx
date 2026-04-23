@@ -5,18 +5,19 @@ import { Bell, CheckCircle2, LogOut, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
+import type { PedidoCocina } from '../types';
 
 const socket = io(SOCKET_URL);
 
 export const CocinaUI = () => {
-  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [pedidos, setPedidos] = useState<PedidoCocina[]>([]);
   const { logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     cargarPendientes();
 
-    socket.on('nueva_comanda', (nuevoPedido) => {
+    socket.on('nueva_comanda', (nuevoPedido: PedidoCocina) => {
       try {
         const audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
         audio.play().catch(() => {});
@@ -24,7 +25,7 @@ export const CocinaUI = () => {
       setPedidos(prev => [nuevoPedido, ...prev]);
     });
 
-    socket.on('pedido_actualizado', ({ id, estado }: any) => {
+    socket.on('pedido_actualizado', ({ id, estado }: { id: number; estado: string }) => {
       if (estado === 'listo') setPedidos(prev => prev.filter(p => p.id !== id));
     });
 
@@ -33,7 +34,7 @@ export const CocinaUI = () => {
 
   const cargarPendientes = async () => {
     try {
-      const { data } = await api.get('/pedidos/pendientes');
+      const { data } = await api.get<PedidoCocina[]>('/pedidos/pendientes');
       setPedidos(data);
     } catch {
       navigate('/login');
@@ -63,7 +64,6 @@ export const CocinaUI = () => {
           backgroundSize: 'cover', backgroundPosition: 'center'
         }}
       />
-
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-6 py-3 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-4">
           <ButacaLogo size={48} variant="icon" theme="light" />
@@ -86,7 +86,6 @@ export const CocinaUI = () => {
           </button>
         </div>
       </header>
-
       <main className="p-6">
         {pedidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-80 text-gray-300 select-none">
@@ -114,7 +113,7 @@ export const CocinaUI = () => {
                   </div>
                 </div>
                 <div className="flex-1 p-4 space-y-2">
-                  {pedido.productos?.map((prod: any, i: number) => (
+                  {pedido.productos?.map((prod, i) => (
                     <div key={i} className="flex items-start gap-3 pb-2 border-b border-gray-50 last:border-0">
                       <span className="font-black text-primary text-lg leading-none w-7 shrink-0">{prod.cantidad}×</span>
                       <div>

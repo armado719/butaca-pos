@@ -4,12 +4,13 @@ import { LogOut, ShoppingCart, Send, Plus, Minus, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
+import type { Mesa, CategoriaMenu, ItemCarrito, Producto } from '../types';
 
 export const MeseroUI = () => {
-  const [mesas, setMesas] = useState<any[]>([]);
-  const [menu, setMenu] = useState<any[]>([]);
-  const [mesaSeleccionada, setMesaSeleccionada] = useState<any>(null);
-  const [carrito, setCarrito] = useState<any[]>([]);
+  const [mesas, setMesas] = useState<Mesa[]>([]);
+  const [menu, setMenu] = useState<CategoriaMenu[]>([]);
+  const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
+  const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const { logout } = useAuth();
   const navigate = useNavigate();
 
@@ -18,8 +19,8 @@ export const MeseroUI = () => {
   const cargarDatos = async () => {
     try {
       const [mesasRes, menuRes] = await Promise.all([
-        api.get('/mesas'),
-        api.get('/productos'),
+        api.get<Mesa[]>('/mesas'),
+        api.get<CategoriaMenu[]>('/productos'),
       ]);
       setMesas(mesasRes.data);
       setMenu(menuRes.data);
@@ -28,7 +29,7 @@ export const MeseroUI = () => {
     }
   };
 
-  const agregarAlCarrito = (producto: any) => {
+  const agregarAlCarrito = (producto: Producto) => {
     setCarrito(prev => {
       const existe = prev.find(p => p.id === producto.id);
       if (existe) return prev.map(p => p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p);
@@ -87,9 +88,8 @@ export const MeseroUI = () => {
             <LogOut size={15} /> Salir
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto p-5">
-          {menu.map((categoria: any) => (
+          {menu.map(categoria => (
             <div key={categoria.id} className="mb-8">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-0.5 w-4 bg-secondary rounded" />
@@ -97,7 +97,7 @@ export const MeseroUI = () => {
                 <div className="h-0.5 flex-1 bg-gray-100 rounded" />
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {categoria.productos.map((prod: any) => (
+                {categoria.productos.map(prod => (
                   <button
                     key={prod.id} onClick={() => agregarAlCarrito(prod)}
                     className="text-left bg-white hover:bg-yellow-50 border border-gray-200 hover:border-primary rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all active:scale-95 group"
@@ -132,7 +132,6 @@ export const MeseroUI = () => {
             ))}
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {carrito.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 select-none">
@@ -159,7 +158,6 @@ export const MeseroUI = () => {
             ))
           )}
         </div>
-
         <div className="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-baseline mb-4">
             <span className="text-gray-500 text-sm font-semibold">Total</span>

@@ -4,10 +4,11 @@ import { DollarSign, LogOut, Banknote, CreditCard, CheckCircle, Smartphone } fro
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
+import type { PedidoCaja } from '../types';
 
 export const CajaUI = () => {
-  const [pedidos, setPedidos]           = useState<any[]>([]);
-  const [pedidoActivo, setPedidoActivo] = useState<any>(null);
+  const [pedidos, setPedidos]           = useState<PedidoCaja[]>([]);
+  const [pedidoActivo, setPedidoActivo] = useState<PedidoCaja | null>(null);
   const [metodoPago, setMetodoPago]     = useState<string>('efectivo');
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export const CajaUI = () => {
 
   const cargarPedidos = async () => {
     try {
-      const { data } = await api.get('/pedidos/caja');
+      const { data } = await api.get<PedidoCaja[]>('/pedidos/caja');
       setPedidos(data);
     } catch {
       navigate('/login');
@@ -62,7 +63,6 @@ export const CajaUI = () => {
             <LogOut size={16} />
           </button>
         </div>
-
         <div className="flex-1 overflow-y-auto p-3">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
             Pendientes por cobrar ({pedidos.length})
@@ -114,7 +114,6 @@ export const CajaUI = () => {
               </div>
               <ButacaLogo size={52} variant="icon" theme="light" />
             </div>
-
             <div className="flex-1 overflow-y-auto px-8 py-4">
               <table className="w-full text-sm">
                 <thead>
@@ -125,7 +124,7 @@ export const CajaUI = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {pedidoActivo.productos.map((p: any, i: number) => (
+                  {pedidoActivo.productos.map((p, i) => (
                     <tr key={i}>
                       <td className="py-3 font-bold text-gray-600 w-12">{p.cantidad}</td>
                       <td className="py-3 font-medium text-gray-800">{p.nombre}</td>
@@ -135,7 +134,6 @@ export const CajaUI = () => {
                 </tbody>
               </table>
             </div>
-
             <div className="px-8 py-5 border-t border-gray-100 bg-gray-50">
               <div className="flex justify-between items-baseline mb-5">
                 <span className="text-gray-500 font-semibold uppercase tracking-widest text-sm">Total a pagar</span>
