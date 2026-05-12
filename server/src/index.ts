@@ -12,6 +12,7 @@ import pedidosRoutes from './routes/pedidos';
 import adminRoutes from './routes/admin';
 import reportesRoutes from './routes/reportes';
 import administrativoRoutes from './routes/administrativo';
+import clientesRoutes from './routes/clientes';
 import { errorHandler } from './middlewares/errorHandler';
 import logger from './lib/logger';
 
@@ -45,6 +46,7 @@ app.use('/api/pedidos',        pedidosRoutes);
 app.use('/api/admin',          adminRoutes);
 app.use('/api/reportes',       reportesRoutes);
 app.use('/api/administrativo', administrativoRoutes);
+app.use('/api/clientes',       clientesRoutes);
 
 app.get('/', (_req, res) => {
   res.send('API La Butaca Restaurante funcionando correctamente.');
