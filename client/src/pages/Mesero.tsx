@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { LogOut, ShoppingCart, Send, Plus, Minus, Trash2 } from 'lucide-react';
+import { LogOut, ShoppingCart, Send, Plus, Minus, Trash2, Bike } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ButacaLogo } from '../components/ButacaLogo';
+import { FormularioDomicilio } from '../components/FormularioDomicilio';
 
 export const MeseroUI = () => {
   const [mesas, setMesas] = useState<any[]>([]);
   const [menu, setMenu] = useState<any[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<any>(null);
   const [carrito, setCarrito] = useState<any[]>([]);
+  const [modoDomicilio, setModoDomicilio] = useState(false);
+  const [domicilioData, setDomicilioData] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,17 +50,21 @@ export const MeseroUI = () => {
   };
 
   const enviarPedido = async () => {
-    if (!mesaSeleccionada) return alert('Selecciona una mesa primero');
+    if (!modoDomicilio && !mesaSeleccionada) return alert('Selecciona una mesa primero');
+    if (modoDomicilio && !domicilioData) return alert('Completa los datos del domicilio');
     if (carrito.length === 0) return alert('El carrito está vacío');
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3001/api/pedidos',
-        { mesa_id: mesaSeleccionada.id, productos: carrito, observaciones: '' },
+      const body = modoDomicilio
+        ? { tipo: 'domicilio', ...domicilioData, productos: carrito, observaciones: '' }
+        : { tipo: 'mesa', mesa_id: mesaSeleccionada.id, productos: carrito, observaciones: '' };
+      await axios.post('http://localhost:3001/api/pedidos', body,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('¡Comanda enviada a cocina!');
+      alert(modoDomicilio ? '¡Domicilio enviado a cocina!' : '¡Comanda enviada a cocina!');
       setCarrito([]);
       setMesaSeleccionada(null);
+      setDomicilioData(null);
       cargarDatos();
     } catch {
       alert('Error al enviar el pedido');
@@ -133,25 +140,52 @@ export const MeseroUI = () => {
       {/* ── DERECHA: Pedido ── */}
       <div className="w-80 flex flex-col bg-gray-50 border-l border-gray-200">
 
-        {/* Selector de mesas */}
+        {/* Toggle Mesa / Domicilio + Selector */}
         <div className="p-4 bg-white border-b border-gray-100">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Mesa</p>
-          <div className="flex flex-wrap gap-2">
-            {mesas.map(mesa => (
-              <button
-                key={mesa.id}
-                onClick={() => setMesaSeleccionada(mesa)}
-                className={`w-12 h-10 rounded-lg font-bold text-sm transition-all ${mesaSeleccionada?.id === mesa.id
-                    ? 'bg-secondary text-white shadow-md ring-2 ring-secondary ring-offset-1'
-                    : mesa.estado === 'ocupada'
-                      ? 'bg-red-100 text-red-500 border border-red-200'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-secondary hover:text-secondary'
-                  }`}
-              >
-                {mesa.numero}
-              </button>
-            ))}
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => { setModoDomicilio(false); setDomicilioData(null); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                !modoDomicilio ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Mesa
+            </button>
+            <button
+              onClick={() => { setModoDomicilio(true); setMesaSeleccionada(null); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${
+                modoDomicilio ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Bike size={16} /> Domicilio
+            </button>
           </div>
+          {!modoDomicilio ? (
+            <>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Mesa</p>
+              <div className="flex flex-wrap gap-2">
+                {mesas.map(mesa => (
+                  <button
+                    key={mesa.id}
+                    onClick={() => setMesaSeleccionada(mesa)}
+                    className={`w-12 h-10 rounded-lg font-bold text-sm transition-all ${mesaSeleccionada?.id === mesa.id
+                        ? 'bg-secondary text-white shadow-md ring-2 ring-secondary ring-offset-1'
+                        : mesa.estado === 'ocupada'
+                          ? 'bg-red-100 text-red-500 border border-red-200'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:border-secondary hover:text-secondary'
+                      }`}
+                  >
+                    {mesa.numero}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <FormularioDomicilio
+              token={localStorage.getItem('token') ?? ''}
+              onChange={setDomicilioData}
+            />
+          )}
         </div>
 
         {/* Carrito */}
@@ -190,12 +224,17 @@ export const MeseroUI = () => {
           </div>
           <button
             onClick={enviarPedido}
-            disabled={!mesaSeleccionada || carrito.length === 0}
+            disabled={(!modoDomicilio && !mesaSeleccionada) || (modoDomicilio && !domicilioData) || carrito.length === 0}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: (!mesaSeleccionada || carrito.length === 0) ? '#e5e7eb' : 'linear-gradient(135deg,#F5A623,#D4880A)', color: (!mesaSeleccionada || carrito.length === 0) ? '#9ca3af' : '#1a1a1a' }}
+            style={{
+              background: ((!modoDomicilio && !mesaSeleccionada) || (modoDomicilio && !domicilioData) || carrito.length === 0) ? '#e5e7eb' : 'linear-gradient(135deg,#F5A623,#D4880A)',
+              color: ((!modoDomicilio && !mesaSeleccionada) || (modoDomicilio && !domicilioData) || carrito.length === 0) ? '#9ca3af' : '#1a1a1a'
+            }}
           >
             <Send size={16} />
-            {mesaSeleccionada ? `Enviar a Cocina — Mesa ${mesaSeleccionada.numero}` : 'Selecciona una mesa'}
+            {modoDomicilio
+              ? (domicilioData ? 'Enviar Domicilio a Cocina' : 'Completa los datos')
+              : (mesaSeleccionada ? `Enviar a Cocina — Mesa ${mesaSeleccionada.numero}` : 'Selecciona una mesa')}
           </button>
         </div>
       </div>
