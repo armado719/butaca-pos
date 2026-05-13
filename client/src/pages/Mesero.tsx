@@ -62,8 +62,9 @@ export const MeseroUI = () => {
       setMesaSeleccionada(null);
       setDomicilioData(null);
       cargarDatos();
-    } catch {
-      alert('Error al enviar el pedido');
+    } catch (err: any) {
+      const msg = err?.response?.data?.msg || err?.response?.data?.errors?.[0]?.message || 'Error al enviar el pedido';
+      alert(msg);
     }
   };
 
@@ -162,10 +163,7 @@ export const MeseroUI = () => {
               </div>
             </>
           ) : (
-            <FormularioDomicilio
-              token={localStorage.getItem('token') ?? ''}
-              onChange={setDomicilioData}
-            />
+            <FormularioDomicilio onChange={setDomicilioData} />
           )}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -182,11 +180,11 @@ export const MeseroUI = () => {
                   <p className="text-primary font-black text-sm">${(item.precio * item.cantidad).toLocaleString('es-CO')}</p>
                 </div>
                 <div className="flex items-center gap-2 bg-gray-100 rounded-full px-2 py-1 shrink-0">
-                  <button onClick={() => actualizarCantidad(item.id, -1)} className="text-gray-500 hover:text-secondary transition">
+                  <button type="button" onClick={() => actualizarCantidad(item.id, -1)} className="text-gray-500 hover:text-secondary transition">
                     {item.cantidad === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
                   </button>
                   <span className="w-4 text-center text-sm font-bold text-gray-700">{item.cantidad}</span>
-                  <button onClick={() => actualizarCantidad(item.id, 1)} className="text-gray-500 hover:text-primary transition">
+                  <button type="button" onClick={() => actualizarCantidad(item.id, 1)} className="text-gray-500 hover:text-primary transition">
                     <Plus size={14} />
                   </button>
                 </div>

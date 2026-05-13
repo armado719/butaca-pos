@@ -1,9 +1,7 @@
 // client/src/components/FormularioDomicilio.tsx
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { api } from '../services/api';
 import { Search, UserPlus, MapPin, Phone, User, FileText } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
 interface Cliente {
   id: number;
@@ -21,31 +19,28 @@ export interface DomicilioData {
 }
 
 interface Props {
-  token: string;
   onChange: (data: DomicilioData | null) => void;
 }
 
-export const FormularioDomicilio = ({ token, onChange }: Props) => {
+export const FormularioDomicilio = ({ onChange }: Props) => {
   const [busqueda, setBusqueda] = useState('');
   const [resultados, setResultados] = useState<Cliente[]>([]);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
   const [modoNuevo, setModoNuevo] = useState(false);
   const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', telefono: '', direccion: '', notas: '' });
   const [direccionEntrega, setDireccionEntrega] = useState('');
-  const [costoDomicilio, setCostoDomicilio] = useState(0);
+  const [costoDomicilio, setCostoDomicilio] = useState('');
 
   useEffect(() => {
     if (busqueda.length < 3) { setResultados([]); return; }
     const t = setTimeout(async () => {
       try {
-        const { data } = await axios.get(`${API}/api/clientes?q=${busqueda}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const { data } = await api.get(`/clientes?q=${busqueda}`);
         setResultados(data);
       } catch { setResultados([]); }
     }, 300);
     return () => clearTimeout(t);
-  }, [busqueda, token]);
+  }, [busqueda]);
 
   useEffect(() => {
     const tieneCliente = clienteSeleccionado || (modoNuevo && nuevoCliente.nombre && nuevoCliente.telefono);
@@ -55,9 +50,12 @@ export const FormularioDomicilio = ({ token, onChange }: Props) => {
 
     onChange({
       cliente_id:        clienteSeleccionado?.id,
-      cliente_nuevo:     modoNuevo ? { ...nuevoCliente } : undefined,
+      cliente_nuevo:     modoNuevo ? {
+        ...nuevoCliente,
+        direccion: nuevoCliente.direccion || direccionEntrega,
+      } : undefined,
       direccion_entrega: direccionEntrega,
-      costo_domicilio:   costoDomicilio,
+      costo_domicilio:   Number(costoDomicilio) || 0,
     });
   }, [clienteSeleccionado, modoNuevo, nuevoCliente, direccionEntrega, costoDomicilio]);
 
@@ -76,7 +74,7 @@ export const FormularioDomicilio = ({ token, onChange }: Props) => {
     setModoNuevo(false);
     setNuevoCliente({ nombre: '', telefono: '', direccion: '', notas: '' });
     setDireccionEntrega('');
-    setCostoDomicilio(0);
+    setCostoDomicilio('');
   };
 
   return (
@@ -94,7 +92,7 @@ export const FormularioDomicilio = ({ token, onChange }: Props) => {
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
               placeholder="Ej: 3001234567"
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
           {resultados.length > 0 && (
@@ -112,14 +110,13 @@ export const FormularioDomicilio = ({ token, onChange }: Props) => {
               ))}
             </ul>
           )}
-          {busqueda.length >= 3 && resultados.length === 0 && (
-            <button
-              onClick={() => { setModoNuevo(true); setNuevoCliente(prev => ({ ...prev, telefono: busqueda })); }}
-              className="mt-2 flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-medium"
-            >
-              <UserPlus size={16} /> Crear cliente nuevo
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => { setModoNuevo(true); setNuevoCliente(prev => ({ ...prev, telefono: busqueda })); }}
+            className="mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed border-orange-300 text-sm text-orange-600 hover:bg-orange-50 hover:border-orange-400 font-medium transition"
+          >
+            <UserPlus size={15} /> Crear cliente nuevo
+          </button>
         </div>
       )}
 
@@ -154,7 +151,7 @@ export const FormularioDomicilio = ({ token, onChange }: Props) => {
                 value={(nuevoCliente as any)[key]}
                 onChange={e => setNuevoCliente(prev => ({ ...prev, [key]: e.target.value }))}
                 placeholder={placeholder}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
             </div>
           ))}
@@ -171,17 +168,18 @@ export const FormularioDomicilio = ({ token, onChange }: Props) => {
               value={direccionEntrega}
               onChange={e => setDireccionEntrega(e.target.value)}
               placeholder="Dirección de entrega"
-              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 whitespace-nowrap">Costo envío $</span>
             <input
-              type="number"
-              min="0"
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
               value={costoDomicilio}
-              onChange={e => setCostoDomicilio(Number(e.target.value))}
-              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              onChange={e => setCostoDomicilio(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
           </div>
         </div>
