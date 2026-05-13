@@ -1,17 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
+import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
 import { ModalOverlay, LabelInput } from './shared';
-
-interface Mesa { id: number; numero: number; capacidad: number; estado: string; }
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import type { Mesa } from '../../types';
 
 export const TabMesas = () => {
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [modal, setModal] = useState<Partial<Mesa> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   const cargar = useCallback(async () => {
-    const { data } = await api.get('/admin/mesas');
-    setMesas(data);
+    try {
+      const { data: res } = await api.get('/admin/mesas');
+      setMesas(res.data || res);
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -21,14 +27,24 @@ export const TabMesas = () => {
     try {
       if (modal.id) await api.put(`/admin/mesas/${modal.id}`, modal);
       else await api.post('/admin/mesas', modal);
+      toast.success('Mesa guardada correctamente');
       setModal(null); cargar();
-    } catch (err: any) { alert(err.response?.data?.msg || 'Error al guardar mesa'); }
+    } catch (err: any) { toast.error(err.response?.data?.msg || 'Error al guardar mesa'); }
   };
 
-  const eliminar = async (id: number) => {
-    if (!confirm('¿Eliminar esta mesa?')) return;
-    try { await api.delete(`/admin/mesas/${id}`); cargar(); }
-    catch { alert('No se puede eliminar una mesa con pedidos activos'); }
+  const eliminar = (id: number) => {
+    setConfirmDelete(id);
+  };
+
+  const confirmarEliminar = async () => {
+    if (!confirmDelete) return;
+    try { 
+      await api.delete(`/admin/mesas/${confirmDelete}`); 
+      toast.success('Mesa eliminada');
+      setConfirmDelete(null);
+      cargar(); 
+    }
+    catch { toast.error('No se puede eliminar una mesa con pedidos activos'); }
   };
 
   const estadoColor: Record<string, string> = {
@@ -67,7 +83,7 @@ export const TabMesas = () => {
             {modal.id && (
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Estado</label>
-                <select value={modal.estado || 'disponible'} onChange={e => setModal({ ...modal, estado: e.target.value })}
+                <select value={modal.estado || 'disponible'} onChange={e => setModal({ ...modal, estado: e.target.value as any })}
                   className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-secondary">
                   {['disponible', 'ocupada', 'reservada'].map(e => <option key={e} value={e}>{e}</option>)}
                 </select>
@@ -80,6 +96,15 @@ export const TabMesas = () => {
           </div>
         </ModalOverlay>
       )}
+      <ConfirmDialog 
+        isOpen={confirmDelete !== null}
+        title="¿Eliminar Mesa?"
+        message="Esta acción no se puede deshacer. La mesa se eliminará permanentemente."
+        onConfirm={confirmarEliminar}
+        onCancel={() => setConfirmDelete(null)}
+        confirmText="Eliminar"
+        variant="danger"
+      />
     </div>
   );
 };

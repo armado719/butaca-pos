@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
-import { TrendingUp, LayoutDashboard, DollarSign } from 'lucide-react';
+import { TrendingUp, LayoutDashboard, DollarSign, PieChart as PieIcon, BarChart3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 interface Reporte {
   fecha: string;
@@ -11,8 +12,13 @@ interface Reporte {
 
 export const TabReportes = () => {
   const [reporte, setReporte] = useState<Reporte | null>(null);
-  const [fecha, setFecha] = useState(new Date().toLocaleDateString('sv-SE'));
+  const [fecha, setFecha] = useState(sessionStorage.getItem('reportes_fecha') || new Date().toLocaleDateString('sv-SE'));
   const [loading, setLoading] = useState(false);
+
+  const updateFecha = (v: string) => {
+    setFecha(v);
+    sessionStorage.setItem('reportes_fecha', v);
+  };
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -25,6 +31,19 @@ export const TabReportes = () => {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  const chartDataMetodos = reporte ? [
+    { name: 'Efectivo', value: Number(reporte.resumen.efectivo), color: '#10b981' },
+    { name: 'Nequi', value: Number(reporte.resumen.nequi), color: '#a855f7' },
+    { name: 'Daviplata', value: Number(reporte.resumen.daviplata), color: '#ef4444' },
+    { name: 'Transferencia', value: Number(reporte.resumen.transferencia), color: '#eab308' },
+  ].filter(d => d.value > 0) : [];
+
+  const chartDataTop = reporte ? reporte.top_productos.slice(0, 5).map(p => ({
+    ...p,
+    cantidad: Number(p.cantidad),
+    total: Number(p.total)
+  })) : [];
+
   const fmt = (n: number) => `$${(n || 0).toLocaleString('es-CO')}`;
 
   return (
@@ -33,7 +52,7 @@ export const TabReportes = () => {
         <h2 className="text-2xl font-black text-gray-800">Reporte del Día</h2>
         <div className="flex items-center gap-3">
           <input
-            type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+            type="date" value={fecha} onChange={e => updateFecha(e.target.value)}
             className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-secondary"
           />
           <button onClick={cargar} className="bg-primary text-darkBg font-bold px-4 py-2 rounded-lg text-sm">Actualizar</button>
@@ -60,6 +79,51 @@ export const TabReportes = () => {
               </div>
             ))}
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 h-[300px] shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <PieIcon size={18} className="text-secondary" />
+                <h3 className="font-bold text-gray-800">Distribución de Pagos</h3>
+              </div>
+              <ResponsiveContainer width="100%" height="80%">
+                <PieChart>
+                  <Pie
+                    data={chartDataMetodos}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartDataMetodos.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: any) => fmt(Number(value || 0))} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-5 h-[300px] shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 size={18} className="text-primary" />
+                <h3 className="font-bold text-gray-800">Top 5 Productos (Ingresos $)</h3>
+              </div>
+              <ResponsiveContainer width="100%" height="80%">
+                <BarChart data={chartDataTop}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="nombre" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                  <YAxis hide />
+                  <Tooltip 
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                    formatter={(value: any) => [fmt(Number(value)), 'Ventas Total']}
+                  />
+                  <Bar dataKey="total" fill="#f5a623" radius={[4, 4, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h3 className="font-bold text-lg mb-4">Top Productos</h3>

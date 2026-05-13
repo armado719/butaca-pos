@@ -132,15 +132,75 @@ export const crearInsumo = async (req: CustomRequest, res: Response, next: NextF
 
 export const actualizarStock = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   const { id } = req.params;
-  const { cantidad } = req.body;
+  const { cantidad, motivo } = req.body;
   const delta = Number(cantidad);
+  const usuario_id = req.usuario!.id;
+
   if (!Number.isFinite(delta) || delta === 0) {
-    res.status(400).json({ msg: 'cantidad debe ser un número distinto de cero (positivo para entrada, negativo para salida)' });
+    res.status(400).json({ msg: 'cantidad inválida' });
     return;
   }
+
+  const conn = await pool.getConnection();
   try {
-    await pool.query('UPDATE insumos SET stock_actual = stock_actual + ? WHERE id = ?', [delta, id]);
-    res.json({ msg: 'Stock actualizado' });
+    await conn.beginTransaction();
+    
+    // 1. Obtener stock previo
+    const [rows] = await conn.query<RowDataPacket[]>('SELECT stock_actual FROM insumos WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      await conn.rollback();
+      res.status(404).json({ msg: 'Insumo no encontrado' });
+      return;
+    }
+    const stock_previo = rows[0].stock_actual;
+
+    // 2. Actualizar stock
+    await conn.query('UPDATE insumos SET stock_actual = stock_actual + ? WHERE id = ?', [delta, id]);
+
+    // 3. Registrar Log
+    const tipo = delta > 0 ? 'entrada' : 'salida';
+    await conn.query(
+      'INSERT INTO insumos_movimientos (insumo_id, tipo, cantidad, stock_previo, motivo, usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, tipo, Math.abs(delta), stock_previo, motivo || 'Ajuste manual', usuario_id]
+    );
+
+    await conn.commit();
+    res.json({ msg: 'Stock actualizado con éxito' });
+  } catch (error) {
+    await conn.rollback();
+    next(error);
+  } finally {
+    conn.release();
+  }
+};
+
+export const getInsumoLogs = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
+  const { id }: any = req.query;
+  try {
+    const params = getPaginationParams(req.query);
+    let sql = `
+      SELECT l.*, u.nombre as usuario_nombre, i.nombre as insumo_nombre
+      FROM insumos_movimientos l
+      JOIN usuarios u ON l.usuario_id = u.id
+      JOIN insumos i ON l.insumo_id = i.id
+    `;
+    const queryParams: any[] = [];
+    if (id) {
+      sql += ' WHERE l.insumo_id = ?';
+      queryParams.push(id);
+    }
+    sql += ' ORDER BY l.created_at DESC LIMIT ? OFFSET ?';
+    queryParams.push(params.limit, params.offset);
+
+    const [rows] = await pool.query<RowDataPacket[]>(sql, queryParams);
+    
+    // Contar totales para paginación
+    const [countRows] = await pool.query<RowDataPacket[]>(
+      `SELECT COUNT(*) as total FROM insumos_movimientos ${id ? 'WHERE insumo_id = ?' : ''}`,
+      id ? [id] : []
+    );
+    
+    res.json(buildPaginatedResponse(rows, countRows[0].total, params));
   } catch (error) { next(error); }
 };
 

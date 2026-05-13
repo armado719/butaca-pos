@@ -10,14 +10,14 @@ export const ModalOverlay = ({ children, onClose }: { children: React.ReactNode;
 );
 
 export const LabelInput = ({
-  label, value, onChange, type = 'text'
+  label, value, onChange, type = 'text', placeholder
 }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string;
+  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
 }) => (
   <div>
     <label className="text-xs text-gray-400 mb-1 block">{label}</label>
     <input
-      type={type} value={value} onChange={e => onChange(e.target.value)}
+      type={type} value={value} placeholder={placeholder} onChange={e => onChange(e.target.value)}
       className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-secondary transition"
     />
   </div>

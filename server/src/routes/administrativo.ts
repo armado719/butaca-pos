@@ -6,7 +6,7 @@ import { crearEmpleadoSchema, crearEgresoSchema } from '../schemas/administrativ
 import {
   getEmpleados, crearEmpleado, actualizarEmpleado,
   getEgresos, crearEgreso, eliminarEgreso, actualizarEgreso,
-  getInsumos, crearInsumo, actualizarStock, eliminarInsumo, actualizarInsumo,
+  getInsumos, crearInsumo, actualizarStock, eliminarInsumo, actualizarInsumo, getInsumoLogs,
 } from '../controllers/administrativo';
 
 const router = Router();
@@ -27,6 +27,7 @@ router.delete('/egresos/:id',   eliminarEgreso);
 router.get('/insumos',          getInsumos);
 router.post('/insumos',         crearInsumo);
 router.put('/insumos/:id',      actualizarInsumo);
+router.get('/insumos/logs',      getInsumoLogs);
 router.patch('/insumos/:id',    actualizarStock);
 router.delete('/insumos/:id',   eliminarInsumo);
 

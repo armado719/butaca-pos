@@ -1,18 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
-import { Plus, Pencil, ToggleLeft, ToggleRight, X, Check } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Plus, Pencil, ToggleLeft, ToggleRight, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ModalOverlay, LabelInput } from './shared';
-
-interface Usuario { id: number; nombre: string; email: string; rol: string; activo: number; }
+import type { Usuario } from '../../types';
 
 export const TabUsuarios = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [modal, setModal] = useState<(Partial<Usuario> & { password?: string }) | null>(null);
+  
+  const [page, setPage] = useState(Number(sessionStorage.getItem('usuarios_page')) || 1);
+  const [total, setTotal] = useState(0);
+  const limit = 10;
+
+  const updatePage = (v: number) => {
+    setPage(v);
+    sessionStorage.setItem('usuarios_page', String(v));
+  };
 
   const cargar = useCallback(async () => {
-    const { data } = await api.get('/admin/usuarios');
-    setUsuarios(data);
-  }, []);
+    try {
+      const { data: res } = await api.get(`/admin/usuarios?page=${page}&limit=${limit}`);
+      setUsuarios(res.data || res);
+      setTotal(res.total || (res.data || res).length);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [page]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -21,8 +35,9 @@ export const TabUsuarios = () => {
     try {
       if (modal.id) await api.put(`/admin/usuarios/${modal.id}`, modal);
       else await api.post('/admin/usuarios', modal);
+      toast.success('Usuario guardado correctamente');
       setModal(null); cargar();
-    } catch (err: any) { alert(err.response?.data?.msg || 'Error al guardar usuario'); }
+    } catch (err: any) { toast.error(err.response?.data?.msg || 'Error al guardar usuario'); }
   };
 
   const toggle = async (id: number) => {
@@ -75,6 +90,30 @@ export const TabUsuarios = () => {
           </tbody>
         </table>
       </div>
+
+      {total > limit && (
+        <div className="mt-6 flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
+          <div className="text-sm text-gray-500">
+            Mostrando <span className="font-bold text-gray-800">{(page-1)*limit + 1}</span> a <span className="font-bold text-gray-800">{Math.min(page*limit, total)}</span> de <span className="font-bold text-gray-800">{total}</span> usuarios
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => updatePage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              <ChevronLeft size={16} /> Anterior
+            </button>
+            <button 
+              onClick={() => updatePage(page + 1)}
+              disabled={page * limit >= total}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            >
+              Siguiente <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
       {modal !== null && (
         <ModalOverlay onClose={() => setModal(null)}>
           <h3 className="text-xl font-black text-gray-800 mb-5">{modal.id ? 'Editar' : 'Nuevo'} Usuario</h3>
@@ -88,7 +127,7 @@ export const TabUsuarios = () => {
             />
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Rol</label>
-              <select value={modal.rol || ''} onChange={e => setModal({ ...modal, rol: e.target.value })}
+              <select value={modal.rol || ''} onChange={e => setModal({ ...modal, rol: e.target.value as any })}
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:border-secondary">
                 <option value="">Selecciona...</option>
                 {['admin', 'mesero', 'cocina', 'cajero'].map(r => <option key={r} value={r}>{r}</option>)}
