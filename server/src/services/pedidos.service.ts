@@ -69,16 +69,35 @@ export async function createOrder(
 
     await conn.commit();
 
-    io?.emit('nueva_comanda', {
-      id: pedido_id,
-      tipo,
-      mesa_id: opts?.mesa_id ?? null,
-      mesero: usuario.nombre,
-      productos,
-      observaciones,
-      estado: 'pendiente',
-      created_at: new Date(),
-    });
+    // Emitir con nombres de productos obtenidos de la BD
+    if (io) {
+      const [detalleRows] = await conn.query<RowDataPacket[]>(
+        `SELECT pd.cantidad, pd.observaciones, prod.nombre
+         FROM pedido_detalle pd
+         JOIN productos prod ON pd.producto_id = prod.id
+         WHERE pd.pedido_id = ?`,
+        [pedido_id]
+      );
+      const [mesaRows] = await conn.query<RowDataPacket[]>(
+        'SELECT numero FROM mesas WHERE id = ?',
+        [opts?.mesa_id ?? 0]
+      );
+      io.emit('nueva_comanda', {
+        id:          pedido_id,
+        tipo,
+        mesa_id:     opts?.mesa_id ?? null,
+        mesa_numero: mesaRows[0]?.numero ?? null,
+        mesero:      usuario.nombre,
+        productos:   detalleRows.map(r => ({
+          nombre:        r.nombre,
+          cantidad:      r.cantidad,
+          observaciones: r.observaciones || '',
+        })),
+        observaciones,
+        estado:     'pendiente',
+        created_at: new Date(),
+      });
+    }
 
     return { pedido_id };
   } catch (error) {

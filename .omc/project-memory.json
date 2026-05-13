@@ -1,0 +1,278 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1778694418413,
+  "projectRoot": "C:\\Desarrollador\\butaca-pos",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {
+      "dev:client": "npm run dev --prefix client",
+      "dev:server": "npm run dev --prefix server"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "client": {
+      "path": "client",
+      "purpose": null,
+      "fileCount": 15,
+      "lastAccessed": 1778694418284,
+      "keyFiles": [
+        "eslint.config.js",
+        "index.html",
+        "package-lock.json",
+        "package.json",
+        "postcss.config.js"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1778694418285,
+      "keyFiles": []
+    },
+    "server": {
+      "path": "server",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1778694418301,
+      "keyFiles": [
+        "package-lock.json",
+        "package.json",
+        "tsconfig.json"
+      ]
+    },
+    "client\\dist": {
+      "path": "client\\dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 6,
+      "lastAccessed": 1778694418302,
+      "keyFiles": [
+        "butaca-menu.jpg",
+        "index.html",
+        "logo_wood.jpg"
+      ]
+    },
+    "client\\node_modules": {
+      "path": "client\\node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1778694418305,
+      "keyFiles": []
+    },
+    "client\\public": {
+      "path": "client\\public",
+      "purpose": "Public files",
+      "fileCount": 5,
+      "lastAccessed": 1778694418325,
+      "keyFiles": [
+        "butaca-menu.jpg",
+        "logo_wood.jpg",
+        "pattern.jpg"
+      ]
+    },
+    "server\\migrations": {
+      "path": "server\\migrations",
+      "purpose": "Database migrations",
+      "fileCount": 4,
+      "lastAccessed": 1778694418337,
+      "keyFiles": [
+        "001_initial_schema.sql",
+        "002_seed_data.sql",
+        "003_admin_module_tables.sql"
+      ]
+    },
+    "server\\node_modules": {
+      "path": "server\\node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1778694418359,
+      "keyFiles": []
+    },
+    "server\\src": {
+      "path": "server\\src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1778694418370,
+      "keyFiles": [
+        "index.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "client\\src\\pages\\Caja.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1778695782723,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 3,
+      "lastAccessed": 1778695490248,
+      "type": "directory"
+    },
+    {
+      "path": "client\\src\\pages\\Mesero.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1778695627414,
+      "type": "file"
+    },
+    {
+      "path": "server\\src",
+      "accessCount": 2,
+      "lastAccessed": 1778695981311,
+      "type": "directory"
+    },
+    {
+      "path": "client\\src\\pages\\Admin.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1778696013100,
+      "type": "file"
+    },
+    {
+      "path": "server\\src\\services\\pedidos.service.ts",
+      "accessCount": 2,
+      "lastAccessed": 1778696418346,
+      "type": "file"
+    },
+    {
+      "path": "server\\migrations\\004_domicilios.sql",
+      "accessCount": 1,
+      "lastAccessed": 1778694501232,
+      "type": "file"
+    },
+    {
+      "path": "server\\src\\controllers\\pedidos.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695015951,
+      "type": "file"
+    },
+    {
+      "path": "server\\src\\routes",
+      "accessCount": 1,
+      "lastAccessed": 1778695047234,
+      "type": "directory"
+    },
+    {
+      "path": "server\\src\\middlewares",
+      "accessCount": 1,
+      "lastAccessed": 1778695049503,
+      "type": "directory"
+    },
+    {
+      "path": "server\\src\\routes\\pedidos.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695064187,
+      "type": "file"
+    },
+    {
+      "path": "server\\src\\middlewares\\validate.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695065976,
+      "type": "file"
+    },
+    {
+      "path": "client\\src\\types\\index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695108639,
+      "type": "file"
+    },
+    {
+      "path": "client\\src\\components",
+      "accessCount": 1,
+      "lastAccessed": 1778695501962,
+      "type": "directory"
+    },
+    {
+      "path": "client\\src\\components\\ConfirmDialog.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1778695524149,
+      "type": "file"
+    },
+    {
+      "path": "client\\src\\components\\Toast.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1778695555074,
+      "type": "file"
+    },
+    {
+      "path": "client\\src\\services\\api.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695851459,
+      "type": "file"
+    },
+    {
+      "path": "client\\src",
+      "accessCount": 1,
+      "lastAccessed": 1778695886859,
+      "type": "directory"
+    },
+    {
+      "path": "server\\src\\routes\\administrativo.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695888672,
+      "type": "file"
+    },
+    {
+      "path": "server\\src\\middlewares\\authorizeRoles.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695906797,
+      "type": "file"
+    },
+    {
+      "path": "server\\src\\middlewares\\validateToken.ts",
+      "accessCount": 1,
+      "lastAccessed": 1778695909254,
+      "type": "file"
+    },
+    {
+      "path": "client\\src\\pages",
+      "accessCount": 1,
+      "lastAccessed": 1778696343359,
+      "type": "directory"
+    },
+    {
+      "path": "client\\src\\pages\\Cocina.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1778696362426,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

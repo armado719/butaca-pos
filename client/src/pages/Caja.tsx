@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
 import { FormularioDomicilio } from '../components/FormularioDomicilio';
+import { Toaster, useToast } from '../components/Toast';
 import type { DomicilioData } from '../components/FormularioDomicilio';
 import type { PedidoCaja, CategoriaMenu, Producto, ItemCarrito } from '../types';
 
@@ -26,6 +27,7 @@ export const CajaUI = () => {
 
   const { logout } = useAuth();
   const navigate   = useNavigate();
+  const { toasts, toast, dismiss } = useToast();
 
   useEffect(() => { cargarPedidos(); }, []);
 
@@ -66,20 +68,32 @@ export const CajaUI = () => {
   };
 
   const enviarDomicilio = async () => {
-    if (!domicilioData) return alert('Completa los datos del domicilio');
-    if (carrito.length === 0) return alert('Agrega al menos un producto');
+    if (!domicilioData) return toast('Completa los datos del domicilio', 'warning');
+    if (carrito.length === 0) return toast('Agrega al menos un producto', 'warning');
     setEnviando(true);
     try {
+      const productos = carrito.map(p => ({
+        id:            Number(p.id),
+        cantidad:      Number(p.cantidad),
+        precio:        Number(p.precio),
+        observaciones: p.observaciones || '',
+      }));
       await api.post('/pedidos', {
         tipo: 'domicilio',
         ...domicilioData,
-        productos: carrito,
+        productos,
         observaciones: '',
       });
+      toast('¡Domicilio enviado a cocina!', 'success');
       setModalDomicilio(false);
       cargarPedidos();
-    } catch {
-      alert('Error al crear el domicilio');
+    } catch (err: any) {
+      const data = err?.response?.data;
+      const firstError = data?.errores?.[0];
+      const msg = firstError
+        ? `${firstError.campo}: ${firstError.mensaje}`
+        : data?.msg || 'Error al crear el domicilio';
+      toast(msg, 'error');
     } finally {
       setEnviando(false);
     }
@@ -93,10 +107,11 @@ export const CajaUI = () => {
         metodo_pago: metodoPago,
         monto: pedidoActivo.total,
       });
+      toast('¡Pago registrado con éxito!', 'success');
       setPedidoActivo(null);
       cargarPedidos();
     } catch {
-      alert('Error procesando el pago');
+      toast('Error procesando el pago', 'error');
     }
   };
 
@@ -106,7 +121,7 @@ export const CajaUI = () => {
       setPedidoActivo(prev => prev ? { ...prev, estado_domicilio: estadoDomicilio } : null);
       cargarPedidos();
     } catch {
-      alert('Error actualizando estado del domicilio');
+      toast('Error actualizando estado del domicilio', 'error');
     }
   };
 
@@ -122,6 +137,7 @@ export const CajaUI = () => {
 
   return (
     <>
+      <Toaster toasts={toasts} onDismiss={dismiss} />
       {/* ── Modal Nuevo Domicilio ─────────────────────────────── */}
       {modalDomicilio && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">

@@ -5,18 +5,20 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
 import { FormularioDomicilio } from '../components/FormularioDomicilio';
+import { Toaster, useToast } from '../components/Toast';
 import type { DomicilioData } from '../components/FormularioDomicilio';
 import type { Mesa, CategoriaMenu, ItemCarrito, Producto } from '../types';
 
 export const MeseroUI = () => {
-  const [mesas, setMesas]                     = useState<Mesa[]>([]);
-  const [menu, setMenu]                       = useState<CategoriaMenu[]>([]);
+  const [mesas, setMesas]                       = useState<Mesa[]>([]);
+  const [menu, setMenu]                         = useState<CategoriaMenu[]>([]);
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
-  const [carrito, setCarrito]                 = useState<ItemCarrito[]>([]);
-  const [modoDomicilio, setModoDomicilio]     = useState(false);
-  const [domicilioData, setDomicilioData]     = useState<DomicilioData | null>(null);
+  const [carrito, setCarrito]                   = useState<ItemCarrito[]>([]);
+  const [modoDomicilio, setModoDomicilio]       = useState(false);
+  const [domicilioData, setDomicilioData]       = useState<DomicilioData | null>(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { toasts, toast, dismiss } = useToast();
 
   useEffect(() => { cargarDatos(); }, []);
 
@@ -49,22 +51,35 @@ export const MeseroUI = () => {
   };
 
   const enviarPedido = async () => {
-    if (!modoDomicilio && !mesaSeleccionada) return alert('Selecciona una mesa primero');
-    if (modoDomicilio && !domicilioData) return alert('Completa los datos del domicilio');
-    if (carrito.length === 0) return alert('El carrito está vacío');
+    if (!modoDomicilio && !mesaSeleccionada) return toast('Selecciona una mesa primero', 'warning');
+    if (modoDomicilio && !domicilioData)     return toast('Completa los datos del domicilio', 'warning');
+    if (carrito.length === 0)               return toast('El carrito está vacío', 'warning');
     try {
+      const productos = carrito.map(p => ({
+        id:            Number(p.id),
+        cantidad:      Number(p.cantidad),
+        precio:        Number(p.precio),
+        observaciones: p.observaciones || '',
+      }));
       const body = modoDomicilio
-        ? { tipo: 'domicilio', ...domicilioData, productos: carrito, observaciones: '' }
-        : { tipo: 'mesa', mesa_id: mesaSeleccionada!.id, productos: carrito, observaciones: '' };
+        ? { tipo: 'domicilio', ...domicilioData, productos, observaciones: '' }
+        : { tipo: 'mesa', mesa_id: Number(mesaSeleccionada!.id), productos, observaciones: '' };
       await api.post('/pedidos', body);
-      alert(modoDomicilio ? '¡Domicilio enviado a cocina!' : '¡Comanda enviada a cocina!');
+      toast(
+        modoDomicilio ? '¡Domicilio enviado a cocina!' : `¡Comanda enviada — Mesa ${mesaSeleccionada?.numero}!`,
+        'success'
+      );
       setCarrito([]);
       setMesaSeleccionada(null);
       setDomicilioData(null);
       cargarDatos();
     } catch (err: any) {
-      const msg = err?.response?.data?.msg || err?.response?.data?.errors?.[0]?.message || 'Error al enviar el pedido';
-      alert(msg);
+      const data = err?.response?.data;
+      const firstError = data?.errores?.[0];
+      const msg = firstError
+        ? `${firstError.campo}: ${firstError.mensaje}`
+        : data?.msg || 'Error al enviar el pedido';
+      toast(msg, 'error');
     }
   };
 
@@ -72,6 +87,8 @@ export const MeseroUI = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden relative">
+      <Toaster toasts={toasts} onDismiss={dismiss} />
+
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none grayscale"
         style={{
@@ -121,7 +138,7 @@ export const MeseroUI = () => {
 
       <div className="w-80 flex flex-col bg-gray-50 border-l border-gray-200">
 
-        {/* Toggle Mesa / Domicilio + Selector */}
+        {/* Toggle Mesa / Domicilio */}
         <div className="p-4 bg-white border-b border-gray-100">
           <div className="flex gap-2 mb-3">
             <button
@@ -166,6 +183,8 @@ export const MeseroUI = () => {
             <FormularioDomicilio onChange={setDomicilioData} />
           )}
         </div>
+
+        {/* Carrito */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {carrito.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-300 select-none">
@@ -192,6 +211,8 @@ export const MeseroUI = () => {
             ))
           )}
         </div>
+
+        {/* Footer */}
         <div className="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
           <div className="flex justify-between items-baseline mb-4">
             <span className="text-gray-500 text-sm font-semibold">Total</span>
