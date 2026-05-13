@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { DollarSign, LogOut, Banknote, CreditCard, CheckCircle, Smartphone } from 'lucide-react';
+import { DollarSign, LogOut, Banknote, CreditCard, CheckCircle, Smartphone, Bike, MapPin, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
@@ -38,11 +38,22 @@ export const CajaUI = () => {
     }
   };
 
+  const actualizarEstadoDomicilio = async (pedidoId: number, estadoDomicilio: string) => {
+    try {
+      await api.put(`/pedidos/${pedidoId}/estado-domicilio`, { estado_domicilio: estadoDomicilio });
+      setPedidoActivo(prev => prev ? { ...prev, estado_domicilio: estadoDomicilio } : null);
+      cargarPedidos();
+    } catch {
+      alert('Error actualizando estado del domicilio');
+    }
+  };
+
   const metodos = [
-    { id: 'efectivo',      label: 'Efectivo',      icon: Banknote },
-    { id: 'nequi',         label: 'Nequi',         icon: Smartphone },
-    { id: 'daviplata',     label: 'Daviplata',     icon: Smartphone },
-    { id: 'transferencia', label: 'Transferencia', icon: CreditCard },
+    { id: 'efectivo',       label: 'Efectivo',       icon: Banknote },
+    { id: 'nequi',          label: 'Nequi',          icon: Smartphone },
+    { id: 'daviplata',      label: 'Daviplata',      icon: Smartphone },
+    { id: 'transferencia',  label: 'Transferencia',  icon: CreditCard },
+    { id: 'contra_entrega', label: 'Contra entrega', icon: Bike },
   ];
 
   return (
@@ -81,13 +92,19 @@ export const CajaUI = () => {
                   }`}
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-black text-gray-800">Mesa {p.mesa_numero}</span>
+                    {p.tipo === 'domicilio' ? (
+                      <span className="flex items-center gap-1 text-amber-600 font-black text-sm">
+                        <Bike size={14}/> DOMICILIO
+                      </span>
+                    ) : (
+                      <span className="font-black text-gray-800">Mesa {p.mesa_numero}</span>
+                    )}
                     <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                       p.estado === 'listo' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
                     }`}>{p.estado}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-xs">{p.mesero}</span>
+                    <span className="text-gray-400 text-xs">{p.tipo === 'domicilio' ? p.cliente_nombre : p.mesero}</span>
                     <span className="font-black text-gray-800">${Number(p.total).toLocaleString('es-CO')}</span>
                   </div>
                 </button>
@@ -107,10 +124,20 @@ export const CajaUI = () => {
           <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
             <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-black text-gray-800">
-                  Mesa {pedidoActivo.mesa_numero} — Ticket #{pedidoActivo.id}
+                <h2 className="text-xl font-black text-gray-800 flex items-center gap-2">
+                  {pedidoActivo.tipo === 'domicilio' ? (
+                    <><Bike size={20} className="text-amber-500"/> {pedidoActivo.cliente_nombre ?? 'Domicilio'}</>
+                  ) : (
+                    <>Mesa {pedidoActivo.mesa_numero}</>
+                  )}
+                  <span className="text-gray-400 font-normal text-sm">— #{pedidoActivo.id}</span>
                 </h2>
                 <p className="text-sm text-gray-400 mt-0.5">Mesero: {pedidoActivo.mesero}</p>
+                {pedidoActivo.tipo === 'domicilio' && pedidoActivo.direccion_entrega && (
+                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                    <MapPin size={13}/> {pedidoActivo.direccion_entrega}
+                  </p>
+                )}
               </div>
               <ButacaLogo size={52} variant="icon" theme="light" />
             </div>
@@ -134,13 +161,46 @@ export const CajaUI = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Estado domicilio */}
+            {pedidoActivo.tipo === 'domicilio' && (
+              <div className="px-8 py-3 border-t border-amber-100 bg-amber-50 flex items-center gap-3">
+                <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">Entrega:</span>
+                {pedidoActivo.estado_domicilio === 'pendiente' && (
+                  <button
+                    onClick={() => actualizarEstadoDomicilio(pedidoActivo.id, 'en_camino')}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5"
+                  >
+                    <Bike size={14}/> Marcar En camino
+                  </button>
+                )}
+                {pedidoActivo.estado_domicilio === 'en_camino' && (
+                  <>
+                    <span className="text-amber-600 text-xs font-semibold flex items-center gap-1"><Bike size={14}/> En camino...</span>
+                    <button
+                      onClick={() => actualizarEstadoDomicilio(pedidoActivo.id, 'entregado')}
+                      className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5"
+                    >
+                      <Navigation size={14}/> Confirmar entregado
+                    </button>
+                  </>
+                )}
+                {pedidoActivo.estado_domicilio === 'entregado' && (
+                  <span className="text-green-600 text-xs font-semibold flex items-center gap-1"><CheckCircle size={14}/> Entregado</span>
+                )}
+              </div>
+            )}
+
+            {/* Sección de pago */}
             <div className="px-8 py-5 border-t border-gray-100 bg-gray-50">
               <div className="flex justify-between items-baseline mb-5">
                 <span className="text-gray-500 font-semibold uppercase tracking-widest text-sm">Total a pagar</span>
                 <span className="text-4xl font-black text-gray-800">${Number(pedidoActivo.total).toLocaleString('es-CO')}</span>
               </div>
-              <div className="grid grid-cols-4 gap-3 mb-5">
-                {metodos.map(m => (
+
+              {/* Métodos de pago */}
+              <div className={`grid gap-3 mb-5 ${pedidoActivo.tipo === 'domicilio' ? 'grid-cols-5' : 'grid-cols-4'}`}>
+                {metodos.filter(m => pedidoActivo.tipo === 'domicilio' || m.id !== 'contra_entrega').map(m => (
                   <button
                     key={m.id} onClick={() => setMetodoPago(m.id)}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-bold ${

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, SOCKET_URL } from '../services/api';
 import { io } from 'socket.io-client';
-import { Bell, CheckCircle2, LogOut, Clock } from 'lucide-react';
+import { Bell, CheckCircle2, LogOut, Clock, Bike } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
@@ -100,9 +100,20 @@ export const CocinaUI = () => {
                 <div className="h-1.5 bg-secondary" />
                 <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100">
                   <div>
-                    <h2 className="text-2xl font-black text-gray-800 leading-none">
-                      Mesa {pedido.mesa_numero ?? pedido.mesa_id}
-                    </h2>
+                    {pedido.tipo === 'domicilio' ? (
+                      <div>
+                        <span className="flex items-center gap-1.5 text-amber-600 font-black text-lg leading-none">
+                          <Bike size={18}/> DOMICILIO
+                        </span>
+                        {pedido.cliente_nombre && (
+                          <p className="text-xs text-gray-500 mt-0.5">{pedido.cliente_nombre}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <h2 className="text-2xl font-black text-gray-800 leading-none">
+                        Mesa {pedido.mesa_numero ?? pedido.mesa_id}
+                      </h2>
+                    )}
                     <p className="text-xs text-gray-400 mt-0.5">{pedido.mesero}</p>
                   </div>
                   <div className="text-right">
