@@ -32,10 +32,10 @@ export const ventasDelDia = async (req: CustomRequest, res: Response, next: Next
     `, [fecha]);
 
     const [ultimosPedidos] = await pool.query<RowDataPacket[]>(`
-      SELECT p.id, p.total, p.estado, p.created_at,
+      SELECT p.id, p.total, p.estado, p.created_at, p.tipo,
              m.numero AS mesa_numero, u.nombre AS mesero, pg.metodo_pago
       FROM pedidos p
-      JOIN mesas m    ON p.mesa_id    = m.id
+      LEFT JOIN mesas m    ON p.mesa_id    = m.id
       JOIN usuarios u ON p.usuario_id = u.id
       LEFT JOIN pagos pg ON pg.pedido_id = p.id
       WHERE DATE(p.created_at) = ?

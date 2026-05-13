@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ButacaLogo } from '../components/ButacaLogo';
 import { FormularioDomicilio } from '../components/FormularioDomicilio';
+import type { DomicilioData } from '../components/FormularioDomicilio';
 import type { Mesa, CategoriaMenu, ItemCarrito, Producto } from '../types';
 
 export const MeseroUI = () => {
@@ -13,7 +14,7 @@ export const MeseroUI = () => {
   const [mesaSeleccionada, setMesaSeleccionada] = useState<Mesa | null>(null);
   const [carrito, setCarrito]                 = useState<ItemCarrito[]>([]);
   const [modoDomicilio, setModoDomicilio]     = useState(false);
-  const [domicilioData, setDomicilioData]     = useState<Record<string, unknown> | null>(null);
+  const [domicilioData, setDomicilioData]     = useState<DomicilioData | null>(null);
   const { logout } = useAuth();
   const navigate = useNavigate();
 

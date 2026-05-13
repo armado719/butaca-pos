@@ -13,7 +13,7 @@ interface Cliente {
   notas?: string;
 }
 
-interface DomicilioData {
+export interface DomicilioData {
   cliente_id?: number;
   cliente_nuevo?: { nombre: string; telefono: string; direccion: string; notas?: string };
   direccion_entrega: string;

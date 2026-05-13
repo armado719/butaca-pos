@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Check, AlertCircle, Info, HelpCircle } from 'lucide-react';
+import { X, Check, Info, HelpCircle } from 'lucide-react';
 
 interface ConfirmModalProps {
   isOpen: boolean;
