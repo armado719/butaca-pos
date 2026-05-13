@@ -105,7 +105,7 @@ export const CajaUI = () => {
     try {
       await api.post(`/pedidos/${pedidoActivo.id}/pagar`, {
         metodo_pago: metodoPago,
-        monto: pedidoActivo.total,
+        monto: Number(pedidoActivo.total),
       });
       toast('¡Pago registrado con éxito!', 'success');
       setPedidoActivo(null);
