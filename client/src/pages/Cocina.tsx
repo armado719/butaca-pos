@@ -17,12 +17,13 @@ export const CocinaUI = () => {
   useEffect(() => {
     cargarPendientes();
 
-    socket.on('nueva_comanda', (nuevoPedido: PedidoCocina) => {
+    socket.on('nueva_comanda', () => {
       try {
         const audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3');
         audio.play().catch(() => {});
       } catch {}
-      setPedidos(prev => [nuevoPedido, ...prev]);
+      // Recargar desde API para obtener nombres completos de productos
+      cargarPendientes();
     });
 
     socket.on('pedido_actualizado', ({ id, estado }: { id: number; estado: string }) => {
