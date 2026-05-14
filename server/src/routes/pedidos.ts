@@ -1,48 +1,79 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
-  crearPedido, getPendientes, actualizarEstado,
-  getCaja, pagarPedido, actualizarEstadoDomicilio, getDomicilios,
-} from '../controllers/pedidos';
-import { validateToken } from '../middlewares/validateToken';
-import { authorizeRoles } from '../middlewares/authorizeRoles';
-import { validate } from '../middlewares/validate';
+  crearPedido,
+  getPendientes,
+  actualizarEstado,
+  getCaja,
+  pagarPedido,
+  actualizarEstadoDomicilio,
+  getDomicilios,
+  transferMesa,
+} from "../controllers/pedidos";
+import { validateToken } from "../middlewares/validateToken";
+import { authorizeRoles } from "../middlewares/authorizeRoles";
+import { validate } from "../middlewares/validate";
 import {
-  crearPedidoSchema, actualizarEstadoSchema,
-  pagarPedidoSchema, actualizarEstadoDomicilioSchema,
-} from '../schemas/pedidos.schema';
+  crearPedidoSchema,
+  actualizarEstadoSchema,
+  pagarPedidoSchema,
+  actualizarEstadoDomicilioSchema,
+} from "../schemas/pedidos.schema";
 
 const router = Router();
 
-router.post('/',
-  validateToken, authorizeRoles('mesero', 'cajero', 'admin'),
+router.post(
+  "/",
+  validateToken,
+  authorizeRoles("mesero", "cajero", "admin"),
   validate(crearPedidoSchema),
-  crearPedido);
+  crearPedido,
+);
 
-router.get('/pendientes',
-  validateToken, authorizeRoles('cocina', 'admin'),
-  getPendientes);
+router.get(
+  "/pendientes",
+  validateToken,
+  authorizeRoles("cocina", "admin"),
+  getPendientes,
+);
 
-router.put('/:id/estado',
-  validateToken, authorizeRoles('cocina', 'admin'),
+router.put(
+  "/:id/estado",
+  validateToken,
+  authorizeRoles("cocina", "admin"),
   validate(actualizarEstadoSchema),
-  actualizarEstado);
+  actualizarEstado,
+);
 
-router.get('/caja',
-  validateToken, authorizeRoles('cajero', 'admin'),
-  getCaja);
+router.get("/caja", validateToken, authorizeRoles("cajero", "admin"), getCaja);
 
-router.post('/:id/pagar',
-  validateToken, authorizeRoles('cajero', 'admin'),
+router.post(
+  "/:id/pagar",
+  validateToken,
+  authorizeRoles("cajero", "admin"),
   validate(pagarPedidoSchema),
-  pagarPedido);
+  pagarPedido,
+);
 
-router.put('/:id/estado-domicilio',
-  validateToken, authorizeRoles('cajero', 'admin'),
+router.put(
+  "/:id/estado-domicilio",
+  validateToken,
+  authorizeRoles("cajero", "admin"),
   validate(actualizarEstadoDomicilioSchema),
-  actualizarEstadoDomicilio);
+  actualizarEstadoDomicilio,
+);
 
-router.get('/domicilios',
-  validateToken, authorizeRoles('cajero', 'admin'),
-  getDomicilios);
+router.get(
+  "/domicilios",
+  validateToken,
+  authorizeRoles("cajero", "admin"),
+  getDomicilios,
+);
+
+router.patch(
+  "/:id/transferir-mesa",
+  validateToken,
+  authorizeRoles("mesero", "cajero", "admin"),
+  transferMesa,
+);
 
 export default router;
