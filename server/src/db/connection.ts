@@ -14,7 +14,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   timezone: "-05:00",
-  ...(isAiven && { ssl: { rejectUnauthorized: true } }),
+  ...(isAiven && { ssl: { rejectUnauthorized: false } }),
 });
 
 export default pool;
