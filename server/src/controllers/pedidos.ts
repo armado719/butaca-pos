@@ -9,7 +9,10 @@ import {
   updateDomicilioStatus,
   getDomiciliosActivos,
   transferirMesa,
+  modificarPedido,
+  getPedidoDetalle,
 } from "../services/pedidos.service";
+import type { ProductoItem } from "../schemas/pedidos.schema";
 import type {
   CrearPedidoDTO,
   ActualizarEstadoDTO,
@@ -138,6 +141,37 @@ export const transferMesa = async (
     const { mesa_destino_id } = req.body as { mesa_destino_id: number };
     await transferirMesa(id, mesa_destino_id, req.io);
     res.json({ msg: "Mesa transferida correctamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const modificarPedidoController = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { agregar = [], eliminar = [] } = req.body as {
+      agregar?: ProductoItem[];
+      eliminar?: number[];
+    };
+    await modificarPedido(id, agregar, eliminar, req.io);
+    res.json({ msg: "Pedido modificado correctamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDetalle = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    res.json(await getPedidoDetalle(id));
   } catch (error) {
     next(error);
   }

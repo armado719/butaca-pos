@@ -329,6 +329,99 @@ export async function transferirMesa(
   }
 }
 
+export async function getPedidoDetalle(id: string): Promise<any[]> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    `SELECT pd.id as detalle_id, pd.cantidad, pd.precio_unitario, pd.subtotal,
+            pd.observaciones, prod.nombre as producto_nombre,
+            p.mesa_id, p.estado, p.total
+     FROM pedido_detalle pd
+     JOIN productos prod ON pd.producto_id = prod.id
+     JOIN pedidos p ON pd.pedido_id = p.id
+     WHERE pd.pedido_id = ?`,
+    [id],
+  );
+  return rows;
+}
+
+export async function modificarPedido(
+  pedido_id: string,
+  agregar: ProductoItem[],
+  eliminar: number[],
+  io?: Server,
+): Promise<void> {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [pedidos] = await conn.query<RowDataPacket[]>(
+      "SELECT id, estado, mesa_id FROM pedidos WHERE id = ?",
+      [pedido_id],
+    );
+    if (pedidos.length === 0) {
+      const err: any = new Error("Pedido no encontrado");
+      err.statusCode = 404;
+      throw err;
+    }
+    const { estado, mesa_id } = pedidos[0];
+    if (["pagado", "cancelado"].includes(estado)) {
+      const err: any = new Error(
+        "No se puede modificar un pedido pagado o cancelado",
+      );
+      err.statusCode = 400;
+      throw err;
+    }
+
+    for (const detalleId of eliminar) {
+      await conn.query(
+        "DELETE FROM pedido_detalle WHERE id = ? AND pedido_id = ?",
+        [detalleId, pedido_id],
+      );
+    }
+
+    for (const item of agregar) {
+      await conn.query(
+        "INSERT INTO pedido_detalle (pedido_id, producto_id, cantidad, precio_unitario, subtotal, observaciones) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          pedido_id,
+          item.id,
+          item.cantidad,
+          item.precio,
+          item.precio * item.cantidad,
+          item.observaciones || "",
+        ],
+      );
+    }
+
+    const [totalRows] = await conn.query<RowDataPacket[]>(
+      "SELECT SUM(subtotal) as total FROM pedido_detalle WHERE pedido_id = ?",
+      [pedido_id],
+    );
+    const nuevoTotal = totalRows[0]?.total ?? 0;
+    await conn.query("UPDATE pedidos SET total = ? WHERE id = ?", [
+      nuevoTotal,
+      pedido_id,
+    ]);
+
+    const [mesaRows] = await conn.query<RowDataPacket[]>(
+      "SELECT numero FROM mesas WHERE id = ?",
+      [mesa_id ?? 0],
+    );
+
+    await conn.commit();
+
+    io?.emit("pedido_modificado", {
+      pedido_id: parseInt(pedido_id),
+      mesa_id,
+      mesa_numero: mesaRows[0]?.numero ?? null,
+    });
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
+  }
+}
+
 export async function processPayment(
   id: string,
   metodo_pago: string,

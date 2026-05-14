@@ -8,6 +8,8 @@ import {
   actualizarEstadoDomicilio,
   getDomicilios,
   transferMesa,
+  modificarPedidoController,
+  getDetalle,
 } from "../controllers/pedidos";
 import { validateToken } from "../middlewares/validateToken";
 import { authorizeRoles } from "../middlewares/authorizeRoles";
@@ -74,6 +76,20 @@ router.patch(
   validateToken,
   authorizeRoles("mesero", "cajero", "admin"),
   transferMesa,
+);
+
+router.patch(
+  "/:id/items",
+  validateToken,
+  authorizeRoles("mesero", "cajero", "admin"),
+  modificarPedidoController,
+);
+
+router.get(
+  "/:id/detalle",
+  validateToken,
+  authorizeRoles("mesero", "cajero", "admin"),
+  getDetalle,
 );
 
 export default router;

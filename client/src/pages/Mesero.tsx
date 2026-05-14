@@ -10,6 +10,8 @@ import {
   Bike,
   ArrowLeftRight,
   X,
+  Pencil,
+  CheckCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -31,6 +33,26 @@ export const MeseroUI = () => {
   const [mesaTransfer, setMesaTransfer] = useState<Mesa | null>(null);
   const [pedidoTransferId, setPedidoTransferId] = useState<number | null>(null);
   const [loadingTransfer, setLoadingTransfer] = useState(false);
+
+  // Editar pedido
+  interface DetalleItem {
+    detalle_id: number;
+    producto_nombre: string;
+    cantidad: number;
+    precio_unitario: number;
+    subtotal: number;
+    observaciones: string;
+  }
+  const [pedidoEditar, setPedidoEditar] = useState<{
+    id: number;
+    mesa_numero: number;
+    items: DetalleItem[];
+  } | null>(null);
+  const [eliminarIds, setEliminarIds] = useState<number[]>([]);
+  const [agregarItems, setAgregarItems] = useState<
+    { id: number; nombre: string; precio: number; cantidad: number }[]
+  >([]);
+  const [loadingEditar, setLoadingEditar] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { toasts, toast, dismiss } = useToast();
@@ -143,6 +165,80 @@ export const MeseroUI = () => {
       toast(err?.response?.data?.msg || "Error al transferir", "error");
     } finally {
       setLoadingTransfer(false);
+    }
+  };
+
+  const abrirEdicion = async (mesa: Mesa) => {
+    try {
+      const resPendientes = await api.get<any[]>("/pedidos/pendientes");
+      const pedido = resPendientes.data.find((p: any) => p.mesa_id === mesa.id);
+      if (!pedido) return toast("No hay pedido activo en esta mesa", "warning");
+      const resDetalle = await api.get<DetalleItem[]>(
+        `/pedidos/${pedido.id}/detalle`,
+      );
+      setPedidoEditar({
+        id: pedido.id,
+        mesa_numero: mesa.numero,
+        items: resDetalle.data,
+      });
+      setEliminarIds([]);
+      setAgregarItems([]);
+    } catch {
+      toast("Error al cargar el pedido", "error");
+    }
+  };
+
+  const toggleEliminar = (detalle_id: number) => {
+    setEliminarIds((prev) =>
+      prev.includes(detalle_id)
+        ? prev.filter((x) => x !== detalle_id)
+        : [...prev, detalle_id],
+    );
+  };
+
+  const agregarAlEditar = (prod: Producto) => {
+    setAgregarItems((prev) => {
+      const existe = prev.find((p) => p.id === prod.id);
+      if (existe)
+        return prev.map((p) =>
+          p.id === prod.id ? { ...p, cantidad: p.cantidad + 1 } : p,
+        );
+      return [
+        ...prev,
+        { id: prod.id, nombre: prod.nombre, precio: prod.precio, cantidad: 1 },
+      ];
+    });
+  };
+
+  const quitarDelAgregar = (id: number) => {
+    setAgregarItems((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const guardarEdicion = async () => {
+    if (!pedidoEditar) return;
+    if (eliminarIds.length === 0 && agregarItems.length === 0)
+      return toast("No hay cambios para guardar", "warning");
+    setLoadingEditar(true);
+    try {
+      await api.patch(`/pedidos/${pedidoEditar.id}/items`, {
+        eliminar: eliminarIds,
+        agregar: agregarItems.map((p) => ({
+          id: p.id,
+          cantidad: p.cantidad,
+          precio: p.precio,
+          observaciones: "",
+        })),
+      });
+      toast(`Pedido Mesa ${pedidoEditar.mesa_numero} actualizado`, "success");
+      setPedidoEditar(null);
+      cargarDatos();
+    } catch (err: any) {
+      toast(
+        err?.response?.data?.msg || "Error al modificar el pedido",
+        "error",
+      );
+    } finally {
+      setLoadingEditar(false);
     }
   };
 
@@ -265,16 +361,28 @@ export const MeseroUI = () => {
                       {mesa.numero}
                     </button>
                     {mesa.estado === "ocupada" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          abrirTransferencia(mesa);
-                        }}
-                        title="Transferir mesa"
-                        className="absolute -top-2 -right-2 hidden group-hover:flex items-center justify-center w-5 h-5 bg-blue-500 text-white rounded-full shadow hover:bg-blue-600 transition"
-                      >
-                        <ArrowLeftRight size={10} />
-                      </button>
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirTransferencia(mesa);
+                          }}
+                          title="Transferir mesa"
+                          className="absolute -top-2 -right-2 hidden group-hover:flex items-center justify-center w-5 h-5 bg-blue-500 text-white rounded-full shadow hover:bg-blue-600 transition"
+                        >
+                          <ArrowLeftRight size={10} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirEdicion(mesa);
+                          }}
+                          title="Editar pedido"
+                          className="absolute -bottom-2 -right-2 hidden group-hover:flex items-center justify-center w-5 h-5 bg-amber-500 text-white rounded-full shadow hover:bg-amber-600 transition"
+                        >
+                          <Pencil size={10} />
+                        </button>
+                      </>
                     )}
                   </div>
                 ))}
@@ -418,6 +526,156 @@ export const MeseroUI = () => {
                   No hay mesas disponibles
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal editar pedido */}
+      {pedidoEditar && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h2 className="font-black text-gray-800 text-lg">
+                  Editar Pedido — Mesa {pedidoEditar.mesa_numero}
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Tilda para eliminar · Agrega productos del menú
+                </p>
+              </div>
+              <button
+                onClick={() => setPedidoEditar(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* Items actuales */}
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Pedido actual
+                </p>
+                <div className="space-y-2">
+                  {pedidoEditar.items.map((item) => {
+                    const marcado = eliminarIds.includes(item.detalle_id);
+                    return (
+                      <div
+                        key={item.detalle_id}
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-all ${marcado ? "bg-red-50 border-red-200 opacity-60" : "bg-gray-50 border-gray-100"}`}
+                      >
+                        <div>
+                          <p
+                            className={`font-semibold text-sm ${marcado ? "line-through text-red-400" : "text-gray-800"}`}
+                          >
+                            {item.producto_nombre}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            x{item.cantidad} · $
+                            {item.subtotal.toLocaleString("es-CO")}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleEliminar(item.detalle_id)}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold transition ${marcado ? "bg-red-400 hover:bg-red-500" : "bg-gray-200 hover:bg-red-300 text-gray-500"}`}
+                        >
+                          {marcado ? (
+                            <CheckCircle size={14} />
+                          ) : (
+                            <Trash2 size={13} />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Agregar productos */}
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                  Agregar productos
+                </p>
+                <div className="space-y-3">
+                  {menu.map((cat) => (
+                    <div key={cat.id}>
+                      <p className="text-xs text-gray-400 font-semibold mb-1">
+                        {cat.nombre}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {cat.productos.map((prod) => {
+                          const enLista = agregarItems.find(
+                            (p) => p.id === prod.id,
+                          );
+                          return (
+                            <button
+                              key={prod.id}
+                              onClick={() => agregarAlEditar(prod)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${enLista ? "bg-amber-100 border-amber-300 text-amber-700" : "bg-white border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600"}`}
+                            >
+                              {prod.nombre}{" "}
+                              {enLista ? `(x${enLista.cantidad})` : ""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resumen de lo que se agrega */}
+              {agregarItems.length > 0 && (
+                <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+                  <p className="text-xs font-bold text-amber-700 mb-2">
+                    Se agregarán:
+                  </p>
+                  <div className="space-y-1">
+                    {agregarItems.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-xs text-amber-800">
+                          x{p.cantidad} {p.nombre}
+                        </span>
+                        <button
+                          onClick={() => quitarDelAgregar(p.id)}
+                          className="text-amber-400 hover:text-amber-600"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setPedidoEditar(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarEdicion}
+                disabled={
+                  loadingEditar ||
+                  (eliminarIds.length === 0 && agregarItems.length === 0)
+                }
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition disabled:opacity-40"
+                style={{
+                  background: "linear-gradient(135deg,#F5A623,#D4880A)",
+                }}
+              >
+                {loadingEditar ? "Guardando..." : "Guardar cambios"}
+              </button>
             </div>
           </div>
         </div>
