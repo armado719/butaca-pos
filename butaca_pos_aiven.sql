@@ -2,6 +2,8 @@
 
 USE `defaultdb`;
 
+SET SESSION sql_require_primary_key = 0;
+
 -- 1. usuarios
 CREATE TABLE IF NOT EXISTS `usuarios` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
