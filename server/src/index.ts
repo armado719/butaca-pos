@@ -55,6 +55,21 @@ app.get("/", (_req, res) => {
   res.send("API La Butaca Restaurante funcionando correctamente.");
 });
 
+app.get("/api/me", (req: any, res) => {
+  const header = req.headers["authorization"] as string | undefined;
+  if (!header?.startsWith("Bearer ")) {
+    res.status(401).json({ msg: "Sin token" });
+    return;
+  }
+  try {
+    const jwt = require("jsonwebtoken");
+    const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+    res.json({ payload });
+  } catch (e: any) {
+    res.status(401).json({ msg: "Token inválido", error: e.message });
+  }
+});
+
 // Endpoint temporal de migración — eliminar después de usarlo
 app.get("/api/run-migrations", async (req, res) => {
   const secret = req.query.secret as string;
