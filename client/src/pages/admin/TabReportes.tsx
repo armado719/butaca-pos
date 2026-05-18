@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../../services/api";
+import { useSocket } from "../../context/SocketContext";
 import {
   TrendingUp,
   LayoutDashboard,
@@ -68,6 +69,7 @@ export const TabReportes = () => {
       new Date().toLocaleDateString("sv-SE"),
   );
   const [loading, setLoading] = useState(false);
+  const { socket } = useSocket();
 
   const updateFecha = (v: string) => {
     setFecha(v);
@@ -88,6 +90,14 @@ export const TabReportes = () => {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("pedido_pagado", cargar);
+    return () => {
+      socket.off("pedido_pagado", cargar);
+    };
+  }, [socket, cargar]);
 
   const chartDataMetodos = reporte
     ? [
