@@ -56,8 +56,8 @@ app.get("/", (_req, res) => {
 });
 
 // Endpoint temporal de seed — eliminar después de usarlo
-app.post("/api/setup-seed", async (req, res) => {
-  const { secret } = req.body;
+app.get("/api/setup-seed", async (req, res) => {
+  const secret = req.query.secret as string;
   if (secret !== process.env.SETUP_SECRET) {
     res.status(403).json({ msg: "No autorizado" });
     return;
@@ -69,7 +69,9 @@ app.post("/api/setup-seed", async (req, res) => {
        ON DUPLICATE KEY UPDATE password = VALUES(password)`,
       ["Administrador", "admin@labutaca.com", hash, "admin"],
     );
-    res.json({ msg: "Usuario admin creado. Email: admin@labutaca.com / Pass: admin123" });
+    res.json({
+      msg: "Usuario admin creado. Email: admin@labutaca.com / Pass: admin123",
+    });
   } catch (e: any) {
     res.status(500).json({ msg: e.message });
   }
