@@ -81,7 +81,7 @@ export async function createOrder(
     }
 
     if (tipo === "mesa" && opts?.mesa_id) {
-      await conn.query('UPDATE mesas SET estado = "ocupada" WHERE id = ?', [
+      await conn.query(`UPDATE mesas SET estado = 'ocupada' WHERE id = ?`, [
         opts.mesa_id,
       ]);
     }
@@ -308,10 +308,10 @@ export async function transferirMesa(
       mesa_destino_id,
       pedido_id,
     ]);
-    await conn.query('UPDATE mesas SET estado = "disponible" WHERE id = ?', [
+    await conn.query(`UPDATE mesas SET estado = 'disponible' WHERE id = ?`, [
       mesa_origen_id,
     ]);
-    await conn.query('UPDATE mesas SET estado = "ocupada" WHERE id = ?', [
+    await conn.query(`UPDATE mesas SET estado = 'ocupada' WHERE id = ?`, [
       mesa_destino_id,
     ]);
 
@@ -437,14 +437,14 @@ export async function processPayment(
       "INSERT INTO pagos (pedido_id, usuario_id, monto, metodo_pago) VALUES (?, ?, ?, ?)",
       [id, usuario_id, monto, metodo_pago],
     );
-    await conn.query('UPDATE pedidos SET estado = "pagado" WHERE id = ?', [id]);
+    await conn.query(`UPDATE pedidos SET estado = 'pagado' WHERE id = ?`, [id]);
 
     const [pedido] = await conn.query<RowDataPacket[]>(
       "SELECT tipo, mesa_id FROM pedidos WHERE id = ?",
       [id],
     );
     if (pedido.length > 0 && pedido[0].tipo === "mesa" && pedido[0].mesa_id) {
-      await conn.query('UPDATE mesas SET estado = "disponible" WHERE id = ?', [
+      await conn.query(`UPDATE mesas SET estado = 'disponible' WHERE id = ?`, [
         pedido[0].mesa_id,
       ]);
     }
