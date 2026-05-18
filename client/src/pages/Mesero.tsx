@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 import { ButacaLogo } from "../components/ButacaLogo";
 import { FormularioDomicilio } from "../components/FormularioDomicilio";
 import { Toaster, useToast } from "../components/Toast";
@@ -56,10 +57,26 @@ export const MeseroUI = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { toasts, toast, dismiss } = useToast();
+  const { socket } = useSocket();
 
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    const reload = () => cargarDatos();
+    socket.on("nueva_comanda", reload);
+    socket.on("pedido_pagado", reload);
+    socket.on("mesa_transferida", reload);
+    socket.on("pedido_modificado", reload);
+    return () => {
+      socket.off("nueva_comanda", reload);
+      socket.off("pedido_pagado", reload);
+      socket.off("mesa_transferida", reload);
+      socket.off("pedido_modificado", reload);
+    };
+  }, [socket]);
 
   const cargarDatos = async () => {
     try {
