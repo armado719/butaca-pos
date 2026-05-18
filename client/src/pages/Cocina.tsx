@@ -1,51 +1,56 @@
 import { useState, useEffect } from "react";
-import { api, SOCKET_URL } from "../services/api";
-import { io } from "socket.io-client";
+import { api } from "../services/api";
 import { Bell, CheckCircle2, LogOut, Clock, Bike } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 import { ButacaLogo } from "../components/ButacaLogo";
 import type { PedidoCocina } from "../types";
-
-const socket = io(SOCKET_URL);
 
 export const CocinaUI = () => {
   const [pedidos, setPedidos] = useState<PedidoCocina[]>([]);
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { socket } = useSocket();
 
   useEffect(() => {
     cargarPendientes();
+  }, []);
 
-    socket.on("nueva_comanda", () => {
+  useEffect(() => {
+    if (!socket) return;
+
+    const onNuevaComanda = () => {
       try {
         const audio = new Audio(
           "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
         );
         audio.play().catch(() => {});
       } catch {}
-      // Recargar desde API para obtener nombres completos de productos
       cargarPendientes();
-    });
+    };
 
-    socket.on(
-      "pedido_actualizado",
-      ({ id, estado }: { id: number; estado: string }) => {
-        if (estado === "listo")
-          setPedidos((prev) => prev.filter((p) => p.id !== id));
-      },
-    );
+    const onPedidoActualizado = ({
+      id,
+      estado,
+    }: {
+      id: number;
+      estado: string;
+    }) => {
+      if (estado === "listo")
+        setPedidos((prev) => prev.filter((p) => p.id !== id));
+    };
 
-    socket.on("pedido_modificado", () => {
-      cargarPendientes();
-    });
+    socket.on("nueva_comanda", onNuevaComanda);
+    socket.on("pedido_actualizado", onPedidoActualizado);
+    socket.on("pedido_modificado", cargarPendientes);
 
     return () => {
-      socket.off("nueva_comanda");
-      socket.off("pedido_actualizado");
-      socket.off("pedido_modificado");
+      socket.off("nueva_comanda", onNuevaComanda);
+      socket.off("pedido_actualizado", onPedidoActualizado);
+      socket.off("pedido_modificado", cargarPendientes);
     };
-  }, []);
+  }, [socket]);
 
   const cargarPendientes = async () => {
     try {
