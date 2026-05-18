@@ -34,7 +34,7 @@ router.post(
 router.get(
   "/pendientes",
   validateToken,
-  authorizeRoles("cocina", "admin"),
+  authorizeRoles("mesero", "cocina", "cajero", "admin"),
   getPendientes,
 );
 
