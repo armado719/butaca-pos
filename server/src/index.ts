@@ -4,6 +4,7 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import bcrypt from "bcrypt";
 
 import authRoutes from "./routes/auth";
 import mesasRoutes from "./routes/mesas";
@@ -15,6 +16,7 @@ import administrativoRoutes from "./routes/administrativo";
 import clientesRoutes from "./routes/clientes";
 import { errorHandler } from "./middlewares/errorHandler";
 import logger from "./lib/logger";
+import pool from "./db/connection";
 
 dotenv.config();
 
@@ -51,6 +53,26 @@ app.use("/api/clientes", clientesRoutes);
 
 app.get("/", (_req, res) => {
   res.send("API La Butaca Restaurante funcionando correctamente.");
+});
+
+// Endpoint temporal de seed — eliminar después de usarlo
+app.post("/api/setup-seed", async (req, res) => {
+  const { secret } = req.body;
+  if (secret !== process.env.SETUP_SECRET) {
+    res.status(403).json({ msg: "No autorizado" });
+    return;
+  }
+  try {
+    const hash = await bcrypt.hash("admin123", 10);
+    await pool.query(
+      `INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE password = VALUES(password)`,
+      ["Administrador", "admin@labutaca.com", hash, "admin"],
+    );
+    res.json({ msg: "Usuario admin creado. Email: admin@labutaca.com / Pass: admin123" });
+  } catch (e: any) {
+    res.status(500).json({ msg: e.message });
+  }
 });
 
 app.use(errorHandler);
