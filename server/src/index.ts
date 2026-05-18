@@ -176,6 +176,25 @@ app.get("/api/run-migrations", async (req, res) => {
     "add entregado_por",
     `ALTER TABLE pedidos ADD COLUMN entregado_por INT NULL AFTER estado_domicilio`,
   );
+  await run(
+    "add contra_entrega to pagos",
+    `ALTER TABLE pagos MODIFY COLUMN metodo_pago ENUM('efectivo','transferencia','nequi','daviplata','contra_entrega') NOT NULL`,
+  );
+  await run(
+    "crear insumos_movimientos",
+    `CREATE TABLE IF NOT EXISTS insumos_movimientos (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      insumo_id   INT NOT NULL,
+      tipo        ENUM('entrada','salida') NOT NULL,
+      cantidad    DECIMAL(10,3) NOT NULL,
+      stock_previo DECIMAL(10,3) NOT NULL,
+      motivo      VARCHAR(255),
+      usuario_id  INT NOT NULL,
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (insumo_id)  REFERENCES insumos(id)  ON DELETE CASCADE,
+      FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+  );
 
   res.json({ results });
 });
