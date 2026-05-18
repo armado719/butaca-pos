@@ -1,13 +1,19 @@
-import { Response, NextFunction } from 'express';
-import pool from '../db/connection';
-import { RowDataPacket } from 'mysql2';
-import { CustomRequest } from '../middlewares/validateToken';
+import { Response, NextFunction } from "express";
+import pool from "../db/connection";
+import { RowDataPacket } from "mysql2";
+import { CustomRequest } from "../middlewares/validateToken";
 
-export const ventasDelDia = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
+export const ventasDelDia = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
-    const fecha = (req.query.fecha as string) || new Date().toISOString().split('T')[0];
+    const fecha =
+      (req.query.fecha as string) || new Date().toISOString().split("T")[0];
 
-    const [resumen] = await pool.query<RowDataPacket[]>(`
+    const [resumen] = await pool.query<RowDataPacket[]>(
+      `
       SELECT
         COUNT(DISTINCT p.id)                                                                  AS total_pedidos,
         COALESCE(SUM(pg.monto), 0)                                                            AS total_ventas,
@@ -18,9 +24,12 @@ export const ventasDelDia = async (req: CustomRequest, res: Response, next: Next
       FROM pagos pg
       JOIN pedidos p ON pg.pedido_id = p.id
       WHERE DATE(pg.created_at) = ?
-    `, [fecha]);
+    `,
+      [fecha],
+    );
 
-    const [topProductos] = await pool.query<RowDataPacket[]>(`
+    const [topProductos] = await pool.query<RowDataPacket[]>(
+      `
       SELECT pr.nombre, SUM(pd.cantidad) AS cantidad, SUM(pd.subtotal) AS total
       FROM pedido_detalle pd
       JOIN productos pr ON pd.producto_id = pr.id
@@ -29,9 +38,12 @@ export const ventasDelDia = async (req: CustomRequest, res: Response, next: Next
       GROUP BY pr.id, pr.nombre
       ORDER BY cantidad DESC
       LIMIT 10
-    `, [fecha]);
+    `,
+      [fecha],
+    );
 
-    const [ultimosPedidos] = await pool.query<RowDataPacket[]>(`
+    const [ultimosPedidos] = await pool.query<RowDataPacket[]>(
+      `
       SELECT p.id, p.total, p.estado, p.created_at, p.tipo,
              m.numero AS mesa_numero, u.nombre AS mesero, pg.metodo_pago
       FROM pedidos p
@@ -41,9 +53,47 @@ export const ventasDelDia = async (req: CustomRequest, res: Response, next: Next
       WHERE DATE(p.created_at) = ?
       ORDER BY p.created_at DESC
       LIMIT 20
-    `, [fecha]);
+    `,
+      [fecha],
+    );
 
-    res.json({ fecha, resumen: resumen[0], top_productos: topProductos, ultimos_pedidos: ultimosPedidos });
+    const [resumenEgresos] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        COALESCE(SUM(monto), 0)                                                                AS total_egresos,
+        COALESCE(SUM(CASE WHEN categoria = 'nomina'        THEN monto ELSE 0 END), 0)          AS nomina,
+        COALESCE(SUM(CASE WHEN categoria = 'insumos'       THEN monto ELSE 0 END), 0)          AS insumos,
+        COALESCE(SUM(CASE WHEN categoria = 'servicios'     THEN monto ELSE 0 END), 0)          AS servicios,
+        COALESCE(SUM(CASE WHEN categoria = 'mantenimiento' THEN monto ELSE 0 END), 0)          AS mantenimiento,
+        COALESCE(SUM(CASE WHEN categoria = 'otros'         THEN monto ELSE 0 END), 0)          AS otros
+      FROM egresos
+      WHERE DATE(fecha) = ?
+    `,
+      [fecha],
+    );
+
+    const [ultimosEgresos] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT e.id, e.concepto, e.monto, e.categoria, e.fecha,
+             emp.nombre AS empleado_nombre, u.nombre AS usuario_nombre
+      FROM egresos e
+      LEFT JOIN empleados emp ON e.empleado_id = emp.id
+      JOIN usuarios u         ON e.usuario_id  = u.id
+      WHERE DATE(e.fecha) = ?
+      ORDER BY e.fecha DESC
+      LIMIT 20
+    `,
+      [fecha],
+    );
+
+    res.json({
+      fecha,
+      resumen: resumen[0],
+      top_productos: topProductos,
+      ultimos_pedidos: ultimosPedidos,
+      resumen_egresos: resumenEgresos[0],
+      ultimos_egresos: ultimosEgresos,
+    });
   } catch (error) {
     next(error);
   }
