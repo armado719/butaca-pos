@@ -190,8 +190,8 @@ app.get("/api/setup-seed", async (req, res) => {
   try {
     const hash = await bcrypt.hash("admin123", 10);
     await pool.query(
-      `INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE password = VALUES(password)`,
+      `INSERT INTO usuarios (nombre, email, password, rol, activo) VALUES (?, ?, ?, ?, 1)
+       ON DUPLICATE KEY UPDATE password = VALUES(password), rol = 'admin', activo = 1`,
       ["Administrador", "admin@labutaca.com", hash, "admin"],
     );
     res.json({
