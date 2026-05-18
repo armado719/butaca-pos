@@ -57,41 +57,49 @@ export const ventasDelDia = async (
       [fecha],
     );
 
-    const [resumenEgresos] = await pool.query<RowDataPacket[]>(
-      `
-      SELECT
-        COALESCE(SUM(monto), 0)                                                                AS total_egresos,
-        COALESCE(SUM(CASE WHEN categoria = 'nomina'        THEN monto ELSE 0 END), 0)          AS nomina,
-        COALESCE(SUM(CASE WHEN categoria = 'insumos'       THEN monto ELSE 0 END), 0)          AS insumos,
-        COALESCE(SUM(CASE WHEN categoria = 'servicios'     THEN monto ELSE 0 END), 0)          AS servicios,
-        COALESCE(SUM(CASE WHEN categoria = 'mantenimiento' THEN monto ELSE 0 END), 0)          AS mantenimiento,
-        COALESCE(SUM(CASE WHEN categoria = 'otros'         THEN monto ELSE 0 END), 0)          AS otros
-      FROM egresos
-      WHERE DATE(fecha) = ?
-    `,
-      [fecha],
-    );
-
-    const [ultimosEgresos] = await pool.query<RowDataPacket[]>(
-      `
-      SELECT e.id, e.concepto, e.monto, e.categoria, e.fecha,
-             emp.nombre AS empleado_nombre, u.nombre AS usuario_nombre
-      FROM egresos e
-      LEFT JOIN empleados emp ON e.empleado_id = emp.id
-      JOIN usuarios u         ON e.usuario_id  = u.id
-      WHERE DATE(e.fecha) = ?
-      ORDER BY e.fecha DESC
-      LIMIT 20
-    `,
-      [fecha],
-    );
+    let resumenEgresos: Record<string, any> = {
+      total_egresos: 0,
+      nomina: 0,
+      insumos: 0,
+      servicios: 0,
+      mantenimiento: 0,
+      otros: 0,
+    };
+    let ultimosEgresos: Record<string, any>[] = [];
+    try {
+      const [re] = await pool.query<RowDataPacket[]>(
+        `SELECT
+          COALESCE(SUM(monto), 0)                                                             AS total_egresos,
+          COALESCE(SUM(CASE WHEN categoria = 'nomina'        THEN monto ELSE 0 END), 0)       AS nomina,
+          COALESCE(SUM(CASE WHEN categoria = 'insumos'       THEN monto ELSE 0 END), 0)       AS insumos,
+          COALESCE(SUM(CASE WHEN categoria = 'servicios'     THEN monto ELSE 0 END), 0)       AS servicios,
+          COALESCE(SUM(CASE WHEN categoria = 'mantenimiento' THEN monto ELSE 0 END), 0)       AS mantenimiento,
+          COALESCE(SUM(CASE WHEN categoria = 'otros'         THEN monto ELSE 0 END), 0)       AS otros
+         FROM egresos WHERE DATE(fecha) = ?`,
+        [fecha],
+      );
+      const [ue] = await pool.query<RowDataPacket[]>(
+        `SELECT e.id, e.concepto, e.monto, e.categoria, e.fecha,
+                emp.nombre AS empleado_nombre, u.nombre AS usuario_nombre
+         FROM egresos e
+         LEFT JOIN empleados emp ON e.empleado_id = emp.id
+         JOIN usuarios u         ON e.usuario_id  = u.id
+         WHERE DATE(e.fecha) = ?
+         ORDER BY e.fecha DESC LIMIT 20`,
+        [fecha],
+      );
+      resumenEgresos = re[0] ?? resumenEgresos;
+      ultimosEgresos = ue;
+    } catch (_) {
+      /* tabla egresos aún no existe */
+    }
 
     res.json({
       fecha,
       resumen: resumen[0],
       top_productos: topProductos,
       ultimos_pedidos: ultimosPedidos,
-      resumen_egresos: resumenEgresos[0],
+      resumen_egresos: resumenEgresos,
       ultimos_egresos: ultimosEgresos,
     });
   } catch (error) {
