@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "../../services/api";
 import { useSocket } from "../../context/SocketContext";
+import toast from "react-hot-toast";
 import {
   TrendingUp,
   LayoutDashboard,
@@ -9,7 +10,11 @@ import {
   BarChart3,
   TrendingDown,
   Wallet,
+  Ban,
+  CreditCard,
 } from "lucide-react";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { ModalOverlay } from "./shared";
 import {
   BarChart,
   Bar,
@@ -69,6 +74,12 @@ export const TabReportes = () => {
       new Date().toLocaleDateString("sv-SE"),
   );
   const [loading, setLoading] = useState(false);
+  const [confirmAnular, setConfirmAnular] = useState<number | null>(null);
+  const [metodoPagoModal, setMetodoPagoModal] = useState<{
+    id: number;
+    metodo_actual: string;
+  } | null>(null);
+  const [nuevoMetodo, setNuevoMetodo] = useState("");
   const { socket } = useSocket();
 
   const updateFecha = (v: string) => {
@@ -98,6 +109,32 @@ export const TabReportes = () => {
       socket.off("pedido_pagado", cargar);
     };
   }, [socket, cargar]);
+
+  const confirmarAnular = async () => {
+    if (!confirmAnular) return;
+    try {
+      await api.patch(`/pedidos/${confirmAnular}/anular`);
+      toast.success("Pedido anulado correctamente");
+      setConfirmAnular(null);
+      cargar();
+    } catch {
+      toast.error("No se pudo anular el pedido");
+    }
+  };
+
+  const confirmarMetodoPago = async () => {
+    if (!metodoPagoModal || !nuevoMetodo) return;
+    try {
+      await api.patch(`/pedidos/${metodoPagoModal.id}/metodo-pago`, {
+        metodo_pago: nuevoMetodo,
+      });
+      toast.success("Método de pago corregido");
+      setMetodoPagoModal(null);
+      cargar();
+    } catch {
+      toast.error("No se pudo corregir el método de pago");
+    }
+  };
 
   const chartDataMetodos = reporte
     ? [
@@ -439,9 +476,31 @@ export const TabReportes = () => {
                           </span>
                         )}
                       </div>
-                      <span className="font-bold text-primary">
-                        {fmt(p.total)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-primary">
+                          {fmt(p.total)}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setMetodoPagoModal({
+                              id: p.id,
+                              metodo_actual: p.metodo_pago || "",
+                            });
+                            setNuevoMetodo(p.metodo_pago || "efectivo");
+                          }}
+                          title="Corregir método de pago"
+                          className="p-1 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                        >
+                          <CreditCard size={14} />
+                        </button>
+                        <button
+                          onClick={() => setConfirmAnular(p.id)}
+                          title="Anular pedido"
+                          className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                        >
+                          <Ban size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -449,6 +508,57 @@ export const TabReportes = () => {
             </div>
           </div>
         </>
+      )}
+
+      <ConfirmDialog
+        isOpen={confirmAnular !== null}
+        title="¿Anular Pedido?"
+        message="El pedido se marcará como cancelado y se descontará de los totales del reporte. Esta acción no se puede deshacer."
+        onConfirm={confirmarAnular}
+        onCancel={() => setConfirmAnular(null)}
+        confirmText="Anular"
+        variant="danger"
+      />
+
+      {metodoPagoModal && (
+        <ModalOverlay onClose={() => setMetodoPagoModal(null)}>
+          <h3 className="text-xl font-black text-gray-800 mb-1">
+            Corregir Método de Pago
+          </h3>
+          <p className="text-xs text-gray-400 mb-5 uppercase tracking-widest">
+            Pedido #{metodoPagoModal.id}
+          </p>
+          <div className="space-y-3">
+            <label className="text-xs text-gray-400 block mb-1">
+              Nuevo método de pago
+            </label>
+            <select
+              value={nuevoMetodo}
+              onChange={(e) => setNuevoMetodo(e.target.value)}
+              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:border-secondary"
+            >
+              {["efectivo", "nequi", "daviplata", "transferencia"].map((m) => (
+                <option key={m} value={m}>
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={confirmarMetodoPago}
+              className="flex-1 bg-primary text-darkBg font-bold py-2.5 rounded-lg"
+            >
+              Guardar Corrección
+            </button>
+            <button
+              onClick={() => setMetodoPagoModal(null)}
+              className="flex-1 bg-gray-100 text-gray-600 hover:bg-gray-200 py-2.5 rounded-lg transition"
+            >
+              Cancelar
+            </button>
+          </div>
+        </ModalOverlay>
       )}
     </div>
   );

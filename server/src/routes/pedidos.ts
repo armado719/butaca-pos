@@ -10,6 +10,8 @@ import {
   transferMesa,
   modificarPedidoController,
   getDetalle,
+  anularPedidoController,
+  corregirMetodoPagoController,
 } from "../controllers/pedidos";
 import { validateToken } from "../middlewares/validateToken";
 import { authorizeRoles } from "../middlewares/authorizeRoles";
@@ -90,6 +92,20 @@ router.get(
   validateToken,
   authorizeRoles("mesero", "cajero", "admin"),
   getDetalle,
+);
+
+router.patch(
+  "/:id/anular",
+  validateToken,
+  authorizeRoles("admin"),
+  anularPedidoController,
+);
+
+router.patch(
+  "/:id/metodo-pago",
+  validateToken,
+  authorizeRoles("admin"),
+  corregirMetodoPagoController,
 );
 
 export default router;
