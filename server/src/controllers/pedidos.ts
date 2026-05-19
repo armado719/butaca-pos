@@ -11,6 +11,8 @@ import {
   transferirMesa,
   modificarPedido,
   getPedidoDetalle,
+  anularPedido,
+  corregirMetodoPago,
 } from "../services/pedidos.service";
 import type { ProductoItem } from "../schemas/pedidos.schema";
 import type {
@@ -172,6 +174,33 @@ export const getDetalle = async (
   try {
     const id = req.params.id as string;
     res.json(await getPedidoDetalle(id));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const anularPedidoController = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await anularPedido(req.params.id, req.io);
+    res.json({ msg: "Pedido anulado correctamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const corregirMetodoPagoController = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { metodo_pago } = req.body as { metodo_pago: string };
+    await corregirMetodoPago(req.params.id, metodo_pago);
+    res.json({ msg: "Método de pago corregido correctamente" });
   } catch (error) {
     next(error);
   }

@@ -422,6 +422,53 @@ export async function modificarPedido(
   }
 }
 
+export async function anularPedido(id: string, io?: Server): Promise<void> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    "SELECT estado FROM pedidos WHERE id = ?",
+    [id],
+  );
+  if (rows.length === 0) {
+    const err: any = new Error("Pedido no encontrado");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (rows[0].estado !== "pagado") {
+    const err: any = new Error("Solo se pueden anular pedidos ya pagados");
+    err.statusCode = 400;
+    throw err;
+  }
+  await pool.query("UPDATE pedidos SET estado = 'cancelado' WHERE id = ?", [
+    id,
+  ]);
+  io?.emit("pedido_anulado", { pedido_id: parseInt(id) });
+}
+
+export async function corregirMetodoPago(
+  id: string,
+  metodo_pago: string,
+): Promise<void> {
+  const [rows] = await pool.query<RowDataPacket[]>(
+    "SELECT estado FROM pedidos WHERE id = ?",
+    [id],
+  );
+  if (rows.length === 0) {
+    const err: any = new Error("Pedido no encontrado");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (rows[0].estado !== "pagado") {
+    const err: any = new Error(
+      "Solo se puede corregir el método de pago de pedidos pagados",
+    );
+    err.statusCode = 400;
+    throw err;
+  }
+  await pool.query("UPDATE pagos SET metodo_pago = ? WHERE pedido_id = ?", [
+    metodo_pago,
+    id,
+  ]);
+}
+
 export async function processPayment(
   id: string,
   metodo_pago: string,
