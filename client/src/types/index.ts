@@ -2,7 +2,7 @@ export interface Mesa {
   id: number;
   numero: number;
   capacidad: number;
-  estado: 'disponible' | 'ocupada' | 'reservada';
+  estado: "disponible" | "ocupada" | "reservada";
 }
 
 export interface Producto {
@@ -44,7 +44,7 @@ export interface PedidoCaja {
   estado: string;
   total: number;
   productos: ProductoPedido[];
-  tipo?: 'mesa' | 'domicilio';
+  tipo?: "mesa" | "domicilio";
   cliente_nombre?: string;
   direccion_entrega?: string;
   estado_domicilio?: string;
@@ -66,7 +66,7 @@ export interface PedidoCocina {
   productos: ProductoComanda[];
   observaciones?: string;
   created_at: string;
-  tipo?: 'mesa' | 'domicilio';
+  tipo?: "mesa" | "domicilio";
   cliente_nombre?: string;
 }
 
@@ -74,7 +74,7 @@ export interface Usuario {
   id: number;
   nombre: string;
   email: string;
-  rol: 'admin' | 'mesero' | 'cocina' | 'cajero';
+  rol: "admin" | "mesero" | "cocina" | "cajero";
   activo: number;
 }
 
@@ -86,6 +86,7 @@ export interface Empleado {
   salario_base?: number;
   telefono?: string;
   direccion?: string;
+  fecha_ingreso?: string;
   fecha_nacimiento?: string;
   banco?: string;
   cuenta_bancaria?: string;
@@ -96,7 +97,7 @@ export interface Egreso {
   id: number;
   concepto: string;
   monto: number;
-  categoria: 'servicios' | 'nomina' | 'insumos' | 'otros';
+  categoria: "servicios" | "nomina" | "insumos" | "otros";
   fecha: string;
   empleado_id?: number | null;
   empleado_nombre?: string;
@@ -105,7 +106,7 @@ export interface Egreso {
 export interface Insumo {
   id: number;
   nombre: string;
-  unidad_medida: 'kg' | 'gr' | 'lt' | 'und';
+  unidad_medida: "kg" | "gr" | "lt" | "und";
   stock_actual: number;
   stock_minimo: number;
 }
