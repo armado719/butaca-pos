@@ -7,14 +7,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Banknote,
+  Trash2,
 } from "lucide-react";
 import { ModalOverlay, LabelInput } from "./shared";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import toast from "react-hot-toast";
 import type { Empleado } from "../../types";
 
 export const TabEmpleados = () => {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [modal, setModal] = useState<Partial<Empleado> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [pagoModal, setPagoModal] = useState<{
     id: number;
     nombre: string;
@@ -68,6 +71,20 @@ export const TabEmpleados = () => {
       cargar();
     } catch {
       toast.error("Error al guardar");
+    }
+  };
+
+  const eliminar = (id: number) => setConfirmDelete(id);
+
+  const confirmarEliminar = async () => {
+    if (!confirmDelete) return;
+    try {
+      await api.delete(`/administrativo/empleados/${confirmDelete}`);
+      toast.success("Empleado eliminado");
+      setConfirmDelete(null);
+      cargar();
+    } catch {
+      toast.error("Error al eliminar empleado");
     }
   };
 
@@ -158,6 +175,12 @@ export const TabEmpleados = () => {
                       >
                         <Pencil size={16} />
                       </button>
+                      <button
+                        onClick={() => eliminar(e.id)}
+                        className="p-1.5 bg-red-50 text-red-400 rounded-lg hover:bg-red-100"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -207,6 +230,12 @@ export const TabEmpleados = () => {
                   className="p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition shadow-inner text-gray-400"
                 >
                   <Pencil size={20} />
+                </button>
+                <button
+                  onClick={() => eliminar(e.id)}
+                  className="p-3 bg-red-50 rounded-xl hover:bg-red-100 transition text-red-400"
+                >
+                  <Trash2 size={20} />
                 </button>
               </div>
             </div>
@@ -363,6 +392,15 @@ export const TabEmpleados = () => {
           </div>
         </ModalOverlay>
       )}
+      <ConfirmDialog
+        isOpen={confirmDelete !== null}
+        title="¿Eliminar Empleado?"
+        message="Esta acción no se puede deshacer. El empleado se eliminará permanentemente."
+        onConfirm={confirmarEliminar}
+        onCancel={() => setConfirmDelete(null)}
+        confirmText="Eliminar"
+        variant="danger"
+      />
     </div>
   );
 };
