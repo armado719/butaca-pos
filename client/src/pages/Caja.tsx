@@ -58,11 +58,13 @@ export const CajaUI = () => {
     if (!socket) return;
     const reload = () => cargarPedidos();
     socket.on("nueva_comanda", reload);
+    socket.on("pedido_actualizado", reload);
     socket.on("pedido_pagado", reload);
     socket.on("pedido_modificado", reload);
     socket.on("mesa_transferida", reload);
     return () => {
       socket.off("nueva_comanda", reload);
+      socket.off("pedido_actualizado", reload);
       socket.off("pedido_pagado", reload);
       socket.off("pedido_modificado", reload);
       socket.off("mesa_transferida", reload);
