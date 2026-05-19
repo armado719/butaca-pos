@@ -24,15 +24,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       autoConnect: true,
     });
 
-    newSocket.on('connect', () => {
-      console.log('Socket conectado:', newSocket.id);
-      setIsConnected(true);
-    });
-
-    newSocket.on('disconnect', () => {
-      console.log('Socket desconectado');
-      setIsConnected(false);
-    });
+    newSocket.on('connect', () => setIsConnected(true));
+    newSocket.on('disconnect', () => setIsConnected(false));
 
     setSocket(newSocket);
 
