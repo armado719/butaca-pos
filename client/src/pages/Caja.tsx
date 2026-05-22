@@ -15,6 +15,7 @@ import {
   Trash2,
   Send,
   X,
+  List,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -31,12 +32,11 @@ import type {
 } from "../types";
 
 export const CajaUI = () => {
-  // ── Estado principal ───────────────────────────────────────────
   const [pedidos, setPedidos] = useState<PedidoCaja[]>([]);
   const [pedidoActivo, setPedidoActivo] = useState<PedidoCaja | null>(null);
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
+  const [mobileTab, setMobileTab] = useState<"pedidos" | "cobrar">("pedidos");
 
-  // ── Nuevo domicilio ────────────────────────────────────────────
   const [modalDomicilio, setModalDomicilio] = useState(false);
   const [menu, setMenu] = useState<CategoriaMenu[]>([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
@@ -147,7 +147,6 @@ export const CajaUI = () => {
     }
   };
 
-  // ── Cobro ──────────────────────────────────────────────────────
   const realizarCobro = async () => {
     if (!pedidoActivo) return;
     try {
@@ -157,6 +156,7 @@ export const CajaUI = () => {
       });
       toast("¡Pago registrado con éxito!", "success");
       setPedidoActivo(null);
+      setMobileTab("pedidos");
       cargarPedidos();
     } catch {
       toast("Error procesando el pago", "error");
@@ -180,6 +180,11 @@ export const CajaUI = () => {
     }
   };
 
+  const seleccionarPedido = (p: PedidoCaja) => {
+    setPedidoActivo(p);
+    setMobileTab("cobrar");
+  };
+
   const metodos = [
     { id: "efectivo", label: "Efectivo", icon: Banknote },
     { id: "nequi", label: "Nequi", icon: Smartphone },
@@ -193,11 +198,11 @@ export const CajaUI = () => {
   return (
     <>
       <Toaster toasts={toasts} onDismiss={dismiss} />
-      {/* ── Modal Nuevo Domicilio ─────────────────────────────── */}
+
+      {/* Modal Nuevo Domicilio */}
       {modalDomicilio && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-black text-gray-800 flex items-center gap-2">
                 <Bike size={20} className="text-amber-500" /> Nuevo Domicilio
@@ -209,10 +214,9 @@ export const CajaUI = () => {
                 <X size={20} />
               </button>
             </div>
-
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
               {/* Menú */}
-              <div className="flex-1 overflow-y-auto p-4 border-r border-gray-100">
+              <div className="flex-1 overflow-y-auto p-4 border-b md:border-b-0 md:border-r border-gray-100 max-h-64 md:max-h-full">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
                   Menú
                 </p>
@@ -241,18 +245,14 @@ export const CajaUI = () => {
                   </div>
                 ))}
               </div>
-
-              {/* Panel derecho: datos domicilio + carrito */}
-              <div className="w-80 flex flex-col overflow-hidden">
-                {/* Formulario domicilio */}
-                <div className="p-4 border-b border-gray-100 overflow-y-auto max-h-64">
+              {/* Panel derecho */}
+              <div className="w-full md:w-80 flex flex-col overflow-hidden">
+                <div className="p-4 border-b border-gray-100 overflow-y-auto max-h-48 md:max-h-64">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
                     Datos del cliente
                   </p>
                   <FormularioDomicilio onChange={setDomicilioData} />
                 </div>
-
-                {/* Carrito */}
                 <div className="flex-1 overflow-y-auto p-4">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
                     Pedido
@@ -305,8 +305,6 @@ export const CajaUI = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Footer: total + enviar */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50">
                   <div className="flex justify-between items-baseline mb-3">
                     <span className="text-sm text-gray-500 font-semibold">
@@ -340,10 +338,12 @@ export const CajaUI = () => {
         </div>
       )}
 
-      {/* ── Layout Principal ──────────────────────────────────── */}
+      {/* Layout Principal */}
       <div className="flex h-screen bg-gray-50 font-sans overflow-hidden relative">
-        {/* Panel izquierdo */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10">
+        {/* Panel izquierdo — lista de pedidos */}
+        <div
+          className={`${mobileTab === "pedidos" ? "flex" : "hidden"} md:flex w-full md:w-80 bg-white border-r border-gray-200 flex-col shadow-xl z-10 pb-16 md:pb-0`}
+        >
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white">
             <div className="flex items-center gap-3">
               <ButacaLogo size={40} variant="icon" theme="light" />
@@ -365,7 +365,6 @@ export const CajaUI = () => {
             </button>
           </div>
 
-          {/* Botón Nuevo Domicilio */}
           <div className="px-3 pt-3">
             <button
               onClick={abrirModalDomicilio}
@@ -388,7 +387,7 @@ export const CajaUI = () => {
                 {pedidos.map((p) => (
                   <button
                     key={p.id}
-                    onClick={() => setPedidoActivo(p)}
+                    onClick={() => seleccionarPedido(p)}
                     className={`w-full text-left p-3 rounded-xl border transition-all ${
                       pedidoActivo?.id === p.id
                         ? "bg-primary/10 border-primary ring-1 ring-primary"
@@ -406,11 +405,7 @@ export const CajaUI = () => {
                         </span>
                       )}
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                          p.estado === "listo"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${p.estado === "listo" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}
                       >
                         {p.estado}
                       </span>
@@ -430,20 +425,22 @@ export const CajaUI = () => {
           </div>
         </div>
 
-        {/* Panel derecho */}
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
+        {/* Panel derecho — detalle y cobro */}
+        <div
+          className={`${mobileTab === "cobrar" ? "flex" : "hidden"} md:flex flex-1 flex-col p-4 md:p-6 overflow-hidden pb-16 md:pb-0`}
+        >
           {!pedidoActivo ? (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-300 select-none">
               <DollarSign size={72} className="mb-4" />
-              <p className="text-xl font-bold text-gray-400">
+              <p className="text-xl font-bold text-gray-400 text-center px-4">
                 Selecciona un pedido para cobrar
               </p>
             </div>
           ) : (
             <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden">
-              <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-5 md:px-8 py-4 md:py-5 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-black text-gray-800 flex items-center gap-2">
+                  <h2 className="text-lg md:text-xl font-black text-gray-800 flex items-center gap-2 flex-wrap">
                     {pedidoActivo.tipo === "domicilio" ? (
                       <>
                         <Bike size={20} className="text-amber-500" />{" "}
@@ -466,10 +463,10 @@ export const CajaUI = () => {
                       </p>
                     )}
                 </div>
-                <ButacaLogo size={52} variant="icon" theme="light" />
+                <ButacaLogo size={48} variant="icon" theme="light" />
               </div>
 
-              <div className="flex-1 overflow-y-auto px-8 py-4">
+              <div className="flex-1 overflow-y-auto px-5 md:px-8 py-4">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-gray-400 text-xs uppercase tracking-widest border-b border-gray-100">
@@ -500,9 +497,8 @@ export const CajaUI = () => {
                 </table>
               </div>
 
-              {/* Estado domicilio */}
               {pedidoActivo.tipo === "domicilio" && (
-                <div className="px-8 py-3 border-t border-amber-100 bg-amber-50 flex items-center gap-3">
+                <div className="px-5 md:px-8 py-3 border-t border-amber-100 bg-amber-50 flex items-center gap-3 flex-wrap">
                   <span className="text-xs font-bold text-amber-700 uppercase tracking-wide">
                     Entrega:
                   </span>
@@ -542,18 +538,17 @@ export const CajaUI = () => {
                 </div>
               )}
 
-              {/* Sección de pago */}
-              <div className="px-8 py-5 border-t border-gray-100 bg-gray-50">
-                <div className="flex justify-between items-baseline mb-5">
+              <div className="px-5 md:px-8 py-4 md:py-5 border-t border-gray-100 bg-gray-50">
+                <div className="flex justify-between items-baseline mb-4">
                   <span className="text-gray-500 font-semibold uppercase tracking-widest text-sm">
                     Total a pagar
                   </span>
-                  <span className="text-4xl font-black text-gray-800">
+                  <span className="text-3xl md:text-4xl font-black text-gray-800">
                     ${Number(pedidoActivo.total).toLocaleString("es-CO")}
                   </span>
                 </div>
                 <div
-                  className={`grid gap-3 mb-5 ${pedidoActivo.tipo === "domicilio" ? "grid-cols-5" : "grid-cols-4"}`}
+                  className={`grid gap-2 md:gap-3 mb-4 ${pedidoActivo.tipo === "domicilio" ? "grid-cols-5" : "grid-cols-4"}`}
                 >
                   {metodos
                     .filter(
@@ -565,14 +560,14 @@ export const CajaUI = () => {
                       <button
                         key={m.id}
                         onClick={() => setMetodoPago(m.id)}
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-bold ${
+                        className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-xl border-2 transition-all text-xs md:text-sm font-bold ${
                           metodoPago === m.id
                             ? "border-secondary bg-secondary/10 text-secondary"
                             : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
                         }`}
                       >
-                        <m.icon size={22} />
-                        {m.label}
+                        <m.icon size={18} />
+                        <span className="hidden sm:block">{m.label}</span>
                       </button>
                     ))}
                 </div>
@@ -590,6 +585,29 @@ export const CajaUI = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bottom tab bar — solo móvil */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-30 shadow-lg">
+        <button
+          onClick={() => setMobileTab("pedidos")}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors relative ${mobileTab === "pedidos" ? "text-primary" : "text-gray-400"}`}
+        >
+          <List size={20} className="mb-0.5" />
+          Pedidos
+          {pedidos.length > 0 && (
+            <span className="absolute top-1.5 right-6 bg-secondary text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+              {pedidos.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setMobileTab("cobrar")}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors ${mobileTab === "cobrar" ? "text-primary" : "text-gray-400"}`}
+        >
+          <DollarSign size={20} className="mb-0.5" />
+          Cobrar
+        </button>
       </div>
     </>
   );
