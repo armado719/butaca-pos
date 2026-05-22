@@ -12,6 +12,8 @@ import {
   X,
   Pencil,
   CheckCircle,
+  UtensilsCrossed,
+  Table2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -34,8 +36,8 @@ export const MeseroUI = () => {
   const [mesaTransfer, setMesaTransfer] = useState<Mesa | null>(null);
   const [pedidoTransferId, setPedidoTransferId] = useState<number | null>(null);
   const [loadingTransfer, setLoadingTransfer] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"menu" | "pedido">("menu");
 
-  // Editar pedido
   interface DetalleItem {
     detalle_id: number;
     producto_nombre: string;
@@ -141,6 +143,7 @@ export const MeseroUI = () => {
       setCarrito([]);
       setMesaSeleccionada(null);
       setDomicilioData(null);
+      setMobileTab("menu");
       cargarDatos();
     } catch (err: any) {
       const data = err?.response?.data;
@@ -274,12 +277,16 @@ export const MeseroUI = () => {
           backgroundPosition: "center",
         }}
       />
-      <div className="flex flex-col flex-1 overflow-hidden border-r border-gray-200 bg-white/90 backdrop-blur-sm relative z-10">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-white shadow-sm">
+
+      {/* Panel menú */}
+      <div
+        className={`${mobileTab === "menu" ? "flex" : "hidden"} md:flex flex-col flex-1 overflow-hidden border-r border-gray-200 bg-white/90 backdrop-blur-sm relative z-10 pb-16 md:pb-0`}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white shadow-sm">
           <div className="flex items-center gap-3">
-            <ButacaLogo size={48} variant="icon" theme="light" />
+            <ButacaLogo size={40} variant="icon" theme="light" />
             <div>
-              <p className="font-black text-gray-800 text-base leading-none">
+              <p className="font-black text-gray-800 text-sm leading-none">
                 LA BUTACA
               </p>
               <p className="text-xs text-gray-400 tracking-widest">MESERO</p>
@@ -295,7 +302,7 @@ export const MeseroUI = () => {
             <LogOut size={15} /> Salir
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-4">
           {menu.map((categoria) => (
             <div key={categoria.id} className="mb-8">
               <div className="flex items-center gap-3 mb-3">
@@ -310,7 +317,7 @@ export const MeseroUI = () => {
                   <button
                     key={prod.id}
                     onClick={() => agregarAlCarrito(prod)}
-                    className="text-left bg-white hover:bg-yellow-50 border border-gray-200 hover:border-primary rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all active:scale-95 group"
+                    className="text-left bg-white hover:bg-yellow-50 border border-gray-200 hover:border-primary rounded-xl p-3 shadow-sm hover:shadow-md transition-all active:scale-95 group"
                   >
                     <p className="font-semibold text-gray-800 text-sm leading-tight group-hover:text-gray-900">
                       {prod.nombre}
@@ -326,7 +333,10 @@ export const MeseroUI = () => {
         </div>
       </div>
 
-      <div className="w-80 flex flex-col bg-gray-50 border-l border-gray-200">
+      {/* Panel pedido (mesas + carrito) */}
+      <div
+        className={`${mobileTab === "pedido" ? "flex" : "hidden"} md:flex w-full md:w-80 flex-col bg-gray-50 border-l border-gray-200 pb-16 md:pb-0`}
+      >
         {/* Toggle Mesa / Domicilio */}
         <div className="p-4 bg-white border-b border-gray-100">
           <div className="flex gap-2 mb-3">
@@ -496,10 +506,43 @@ export const MeseroUI = () => {
                 ? "Enviar Domicilio a Cocina"
                 : "Completa los datos"
               : mesaSeleccionada
-                ? `Enviar a Cocina — Mesa ${mesaSeleccionada.numero}`
+                ? `Enviar — Mesa ${mesaSeleccionada.numero}`
                 : "Selecciona una mesa"}
           </button>
         </div>
+      </div>
+
+      {/* Bottom tab bar — solo móvil */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-30 shadow-lg">
+        <button
+          onClick={() => setMobileTab("menu")}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors ${mobileTab === "menu" ? "text-primary" : "text-gray-400"}`}
+        >
+          <UtensilsCrossed size={20} className="mb-0.5" />
+          Menú
+        </button>
+        <button
+          onClick={() => setMobileTab("pedido")}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors relative ${mobileTab === "pedido" ? "text-primary" : "text-gray-400"}`}
+        >
+          <Table2 size={20} className="mb-0.5" />
+          Mesas
+          {mesaSeleccionada && (
+            <span className="absolute top-1.5 right-6 w-2 h-2 bg-green-400 rounded-full" />
+          )}
+        </button>
+        <button
+          onClick={() => setMobileTab("pedido")}
+          className={`flex-1 flex flex-col items-center py-2.5 text-xs font-semibold transition-colors relative ${mobileTab === "pedido" ? "text-primary" : "text-gray-400"}`}
+        >
+          <ShoppingCart size={20} className="mb-0.5" />
+          Carrito
+          {carrito.length > 0 && (
+            <span className="absolute top-1.5 right-5 bg-secondary text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center">
+              {carrito.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Modal transferir mesa */}
@@ -552,7 +595,6 @@ export const MeseroUI = () => {
       {pedidoEditar && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <div>
                 <h2 className="font-black text-gray-800 text-lg">
@@ -569,9 +611,7 @@ export const MeseroUI = () => {
                 <X size={20} />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              {/* Items actuales */}
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                   Pedido actual
@@ -610,8 +650,6 @@ export const MeseroUI = () => {
                   })}
                 </div>
               </div>
-
-              {/* Agregar productos */}
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
                   Agregar productos
@@ -643,8 +681,6 @@ export const MeseroUI = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Resumen de lo que se agrega */}
               {agregarItems.length > 0 && (
                 <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
                   <p className="text-xs font-bold text-amber-700 mb-2">
@@ -671,8 +707,6 @@ export const MeseroUI = () => {
                 </div>
               )}
             </div>
-
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
               <button
                 onClick={() => setPedidoEditar(null)}

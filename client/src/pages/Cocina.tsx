@@ -88,23 +88,25 @@ export const CocinaUI = () => {
           backgroundPosition: "center",
         }}
       />
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-6 py-3 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-4">
-          <ButacaLogo size={48} variant="icon" theme="light" />
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 md:px-6 py-3 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-3">
+          <ButacaLogo size={40} variant="icon" theme="light" />
           <div>
-            <h1 className="text-xl font-black text-gray-800 leading-none">
+            <h1 className="text-lg md:text-xl font-black text-gray-800 leading-none">
               COCINA
             </h1>
-            <p className="text-xs text-gray-400 tracking-widest">
+            <p className="text-xs text-gray-400 tracking-widest hidden sm:block">
               LA BUTACA RESTAURANTE
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-secondary/10 text-secondary px-4 py-2 rounded-xl">
-            <Bell size={16} />
-            <span className="font-black text-lg">{pedidos.length}</span>
-            <span className="text-sm font-semibold">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-1.5 bg-secondary/10 text-secondary px-3 py-1.5 md:px-4 md:py-2 rounded-xl">
+            <Bell size={15} />
+            <span className="font-black text-base md:text-lg">
+              {pedidos.length}
+            </span>
+            <span className="text-xs md:text-sm font-semibold hidden sm:block">
               pendiente{pedidos.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -115,11 +117,11 @@ export const CocinaUI = () => {
             }}
             className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition"
           >
-            <LogOut size={15} /> Salir
+            <LogOut size={15} /> <span className="hidden sm:block">Salir</span>
           </button>
         </div>
       </header>
-      <main className="p-6">
+      <main className="p-3 md:p-6">
         {pedidos.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-80 text-gray-300 select-none">
             <Bell size={64} className="mb-4" />
